@@ -1,0 +1,1431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kitchen Companion 🍳</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+    body{background:#faf7f2;color:#2c2c2c;min-height:100vh}
+
+    .header{background:linear-gradient(135deg,#2d8a4e 0%,#1a5c34 100%);color:white;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 3px 12px rgba(0,0,0,0.18)}
+    .header h1{font-size:22px;font-weight:800;letter-spacing:-0.3px}
+    .header-right{display:flex;align-items:center;gap:8px}
+    .icon-btn{background:rgba(255,255,255,0.15);border:none;color:white;padding:8px 12px;border-radius:8px;cursor:pointer;font-size:18px;position:relative;transition:background 0.2s}
+    .icon-btn:hover{background:rgba(255,255,255,0.25)}
+    .bell-badge{position:absolute;top:3px;right:3px;background:#e74c3c;color:white;border-radius:50%;width:15px;height:15px;font-size:9px;display:flex;align-items:center;justify-content:center;font-weight:700}
+
+    .tabs{display:flex;background:white;border-bottom:2px solid #e8ede9;position:sticky;top:0;z-index:100;box-shadow:0 2px 6px rgba(0,0,0,0.06)}
+    .tab{flex:1;padding:14px 8px;text-align:center;cursor:pointer;font-weight:600;color:#888;border-bottom:3px solid transparent;transition:all 0.2s;font-size:14px}
+    .tab.active{color:#2d8a4e;border-bottom-color:#2d8a4e;background:#f2f8f3}
+    .tab:hover:not(.active){background:#f8f8f8}
+
+    .content{max-width:920px;margin:0 auto;padding:20px 16px}
+
+    .alert-banner{background:#fff8e6;border-left:4px solid #f4a226;padding:12px 16px;border-radius:8px;margin-bottom:16px}
+    .alert-banner.critical{background:#fff0f0;border-left-color:#e74c3c}
+    .alert-title{font-weight:700;font-size:13px;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+    .alert-items{font-size:13px;color:#666;line-height:1.6}
+
+    .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+    .section-title{font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px}
+    .inventory-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:12px;margin-bottom:28px}
+    .inv-item{background:white;border:2px solid #ebebeb;border-radius:12px;padding:14px;position:relative;transition:border-color 0.2s}
+    .inv-item.low{border-color:#f4a226}
+    .inv-item.critical{border-color:#e74c3c}
+    .inv-name{font-weight:700;font-size:14px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .inv-qty{font-size:12px;color:#777;margin-bottom:8px}
+    .prog-bar{height:5px;background:#eee;border-radius:3px;overflow:hidden;margin-bottom:6px}
+    .prog-fill{height:100%;border-radius:3px;transition:width 0.4s}
+    .inv-pct{font-size:11px;font-weight:700;margin-bottom:8px}
+    .inv-actions{display:flex;gap:5px;flex-wrap:wrap}
+    .btn-xs{padding:3px 9px;font-size:11px;border-radius:6px;border:none;cursor:pointer;font-weight:600}
+    .btn-edit{background:#e8f0e9;color:#2d8a4e}
+    .btn-del{background:#fde8e8;color:#c0392b}
+    .add-item-card{background:white;border:2px dashed #d0d0d0;border-radius:12px;padding:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s;color:#999;font-size:13px;font-weight:600;gap:6px;min-height:100px;text-align:center;flex-direction:column}
+    .add-item-card:hover{border-color:#2d8a4e;color:#2d8a4e;background:#f5fbf6}
+
+    .btn{padding:10px 20px;border-radius:8px;border:none;cursor:pointer;font-weight:700;font-size:14px;transition:all 0.2s;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+    .btn:disabled{opacity:0.5;cursor:not-allowed}
+    .btn-primary{background:#2d8a4e;color:white}
+    .btn-primary:hover:not(:disabled){background:#1a5c34}
+    .btn-secondary{background:#f0f0f0;color:#444}
+    .btn-secondary:hover:not(:disabled){background:#e0e0e0}
+    .btn-orange{background:#f4a226;color:white}
+    .btn-orange:hover:not(:disabled){background:#d4891a}
+    .btn-full{width:100%;padding:14px;font-size:15px;margin-top:12px}
+    .btn-scan{background:linear-gradient(135deg,#667eea,#764ba2);color:white}
+    .btn-scan:hover{background:linear-gradient(135deg,#5a6fd8,#6a429a)}
+    .btn-camera{background:linear-gradient(135deg,#2d8a4e,#1a5c34);color:white;padding:12px 20px;font-size:14px}
+
+    /* ── Fraction Selector ── */
+    .fraction-row{display:flex;gap:6px;flex-wrap:wrap}
+    .frac-btn{padding:8px 12px;border-radius:8px;border:2px solid #e0e0e0;cursor:pointer;font-size:13px;font-weight:700;transition:all 0.2s;background:white;white-space:nowrap}
+    .frac-btn.sel{border-color:#2d8a4e;background:#e8f0e9;color:#1a5c34}
+
+    /* ── Container type ── */
+    .container-row{display:flex;gap:6px;flex-wrap:wrap}
+    .cont-btn{padding:6px 12px;border-radius:8px;border:2px solid #e0e0e0;cursor:pointer;font-size:12px;font-weight:600;transition:all 0.2s;background:white}
+    .cont-btn.sel{border-color:#2d8a4e;background:#e8f0e9;color:#1a5c34}
+
+    /* ── Recipe Tab ── */
+    .filter-section{background:white;border-radius:12px;padding:18px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+    .filter-label{font-size:12px;font-weight:700;color:#555;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px}
+    .chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+    .chip{padding:7px 14px;border-radius:20px;border:2px solid #e0e0e0;cursor:pointer;font-size:13px;font-weight:600;transition:all 0.2s;background:white}
+    .chip.active-green{border-color:#2d8a4e;background:#e8f0e9;color:#2d8a4e}
+    .chip.active-red{border-color:#e74c3c;background:#fde8e8;color:#e74c3c}
+    .chip.active-blue{border-color:#3498db;background:#e8f3fb;color:#3498db}
+    .chip.active-purple{border-color:#8e44ad;background:#f4e8ff;color:#8e44ad}
+    .chip.active-teal{border-color:#16a085;background:#e8f8f5;color:#16a085}
+    .chip.active-orange{border-color:#e67e22;background:#fff3e0;color:#e67e22}
+
+    .recipe-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}
+    .recipe-card{background:white;border-radius:14px;padding:18px;cursor:pointer;transition:all 0.2s;border:2px solid transparent;box-shadow:0 2px 8px rgba(0,0,0,0.07)}
+    .recipe-card:hover{transform:translateY(-3px);box-shadow:0 8px 20px rgba(0,0,0,0.12)}
+    .recipe-card.can-make{border-color:#2d8a4e}
+    .recipe-card.almost{border-color:#f4a226}
+    .rc-emoji{font-size:42px;margin-bottom:10px;display:block}
+    .rc-name{font-weight:700;font-size:15px;margin-bottom:6px}
+    .rc-tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+    .tag{padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700}
+    .tag-g{background:#e8f0e9;color:#2d8a4e}
+    .tag-o{background:#fff3e0;color:#e67e22}
+    .tag-b{background:#e8f3fb;color:#2980b9}
+    .tag-r{background:#fde8e8;color:#c0392b}
+    .tag-p{background:#f4e8ff;color:#8e44ad}
+    .tag-t{background:#e8f8f5;color:#16a085}
+    .rc-match{font-size:11px;color:#999;display:flex;align-items:center;gap:4px}
+    .match-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px}
+    .modal{background:white;border-radius:18px;width:100%;max-width:600px;max-height:92vh;overflow-y:auto;padding:28px;position:relative;animation:popIn 0.25s ease}
+    .modal.wide{max-width:740px}
+    @keyframes popIn{from{opacity:0;transform:scale(0.94)}to{opacity:1;transform:scale(1)}}
+    .modal-close{position:absolute;top:16px;right:16px;background:#f0f0f0;border:none;font-size:18px;cursor:pointer;color:#555;line-height:1;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+    .modal-close:hover{background:#e0e0e0}
+
+    .form-group{margin-bottom:14px}
+    .form-label{display:block;font-size:13px;font-weight:700;margin-bottom:5px;color:#555}
+    .form-input{width:100%;padding:10px 13px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;outline:none;transition:border-color 0.2s}
+    .form-input:focus{border-color:#2d8a4e}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .form-select{width:100%;padding:10px 13px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;outline:none;background:white;cursor:pointer}
+    .form-select:focus{border-color:#2d8a4e}
+    .form-hint{font-size:11px;color:#999;margin-top:4px}
+
+    /* ── Onboarding ── */
+    .onboarding-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(160deg,#f5fbf6 0%,#faf7f2 60%,#fff9ef 100%)}
+    .onboarding-card{background:white;border-radius:20px;padding:36px;max-width:520px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,0.1)}
+    .ob-logo{font-size:48px;margin-bottom:12px}
+    .ob-title{font-size:24px;font-weight:800;color:#1a5c34;margin-bottom:6px}
+    .ob-sub{font-size:14px;color:#666;margin-bottom:24px;line-height:1.6}
+    .step-dots{display:flex;gap:7px;margin-bottom:24px}
+    .dot{width:9px;height:9px;border-radius:50%;background:#ddd;transition:all 0.3s}
+    .dot.active{background:#2d8a4e;width:24px;border-radius:5px}
+    .dot.done{background:#2d8a4e}
+    .check-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .check-item{padding:10px 12px;border:2px solid #e8e8e8;border-radius:10px;cursor:pointer;font-size:13px;font-weight:600;transition:all 0.2s;display:flex;align-items:center;gap:8px}
+    .check-item.sel{border-color:#2d8a4e;background:#e8f0e9;color:#1a5c34}
+    .scale-row{display:flex;gap:8px;flex-wrap:wrap}
+    .scale-btn{flex:1;min-width:60px;padding:10px 6px;border:2px solid #e8e8e8;border-radius:10px;cursor:pointer;text-align:center;font-weight:700;font-size:13px;transition:all 0.2s}
+    .scale-btn.sel{border-color:#2d8a4e;background:#e8f0e9;color:#1a5c34}
+    .ob-nav{display:flex;justify-content:space-between;align-items:center;margin-top:24px}
+
+    /* ── Recipe Detail ── */
+    .rd-header{display:flex;align-items:flex-start;gap:16px;margin-bottom:20px}
+    .rd-emoji{font-size:56px;line-height:1}
+    .rd-info h2{font-size:21px;font-weight:800;margin-bottom:8px}
+    .rd-tags{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:6px}
+    .rd-time{font-size:13px;color:#888}
+    .rd-section{margin-top:18px}
+    .rd-section-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;color:#555;margin-bottom:10px}
+    .ing-list{list-style:none}
+    .ing-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f5f5f5;font-size:14px}
+    .ing-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+    .ing-dot.have{background:#2d8a4e}
+    .ing-dot.missing{background:#e74c3c}
+    .ing-dot.unknown{background:#bbb}
+    .step-list{list-style:none}
+    .step-item{display:flex;gap:14px;padding:10px 0;border-bottom:1px solid #f5f5f5}
+    .step-num{min-width:26px;height:26px;background:#2d8a4e;color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;margin-top:2px}
+    .step-text{font-size:14px;line-height:1.55;color:#333}
+    .missing-note{background:#fff8e6;border-radius:8px;padding:10px 14px;font-size:13px;color:#c07d00;margin-top:12px}
+
+    /* ── History ── */
+    .history-item{display:flex;align-items:center;gap:16px;padding:16px;border-bottom:1px solid #f0f0f0}
+    .history-item:last-child{border-bottom:none}
+    .hi-emoji{font-size:34px}
+    .hi-info{flex:1}
+    .hi-name{font-weight:700;font-size:15px}
+    .hi-date{font-size:12px;color:#999;margin-top:2px}
+    .hi-month{font-size:11px;font-weight:700;color:#2d8a4e;text-transform:uppercase;letter-spacing:0.5px;margin-top:2px}
+
+    /* ── Monthly Challenge ── */
+    .challenge-header{background:linear-gradient(135deg,#f4a226,#e67e22);color:white;padding:20px;border-radius:12px;margin-bottom:20px;text-align:center}
+    .challenge-header h3{font-size:20px;font-weight:800;margin-bottom:4px}
+    .challenge-option{background:white;border:2px solid #e8e8e8;border-radius:12px;padding:14px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:14px;margin-bottom:10px}
+    .challenge-option:hover{border-color:#2d8a4e;background:#f5fbf6}
+    .challenge-option.selected{border-color:#2d8a4e;background:#e8f0e9}
+    .co-emoji{font-size:34px}
+    .co-info{flex:1}
+    .co-name{font-weight:700;font-size:15px;margin-bottom:4px}
+    .co-meta{font-size:12px;color:#888}
+
+    /* ── Scan Modal ── */
+    .scan-drop{border:3px dashed #d0d0d0;border-radius:14px;padding:32px;text-align:center;cursor:pointer;transition:all 0.2s;background:#fafafa;margin-bottom:16px}
+    .scan-drop:hover,.scan-drop.drag{border-color:#2d8a4e;background:#f5fbf6}
+    .scan-drop-icon{font-size:48px;margin-bottom:12px}
+    .scan-drop-text{font-size:15px;font-weight:700;color:#555;margin-bottom:6px}
+    .scan-drop-sub{font-size:13px;color:#999}
+    .scan-preview{width:100%;max-height:260px;object-fit:contain;border-radius:10px;margin-bottom:16px;background:#f0f0f0}
+    .scan-item-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f0f0f0}
+    .scan-item-name{flex:1;font-weight:600;font-size:14px}
+    .scan-item-actions{display:flex;gap:6px;align-items:center}
+    .scan-remove{background:none;border:none;color:#e74c3c;cursor:pointer;font-size:16px;padding:2px 6px}
+    .loading-pulse{display:flex;align-items:center;justify-content:center;gap:10px;padding:24px;color:#666;font-size:15px}
+    .spinner{width:24px;height:24px;border:3px solid #e0e0e0;border-top-color:#2d8a4e;border-radius:50%;animation:spin 0.8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .api-key-note{background:#e8f3fb;border-radius:8px;padding:12px;font-size:13px;color:#2980b9;margin-bottom:16px}
+    .api-key-note a{color:#2980b9;font-weight:700}
+    .manual-row{display:flex;gap:8px;margin-bottom:12px}
+
+    .toast{position:fixed;bottom:24px;right:24px;background:#1a5c34;color:white;padding:14px 18px;border-radius:12px;font-size:14px;font-weight:600;z-index:999;animation:slideUp 0.3s ease;box-shadow:0 4px 18px rgba(0,0,0,0.25);max-width:320px;line-height:1.4}
+    @keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+    .toast.warning{background:#e67e22}
+    .toast.error{background:#c0392b}
+
+    .empty{text-align:center;padding:48px 20px;color:#aaa}
+    .empty-icon{font-size:52px;margin-bottom:12px}
+    .empty-text{font-size:15px}
+    .badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700}
+    .badge-green{background:#e8f0e9;color:#2d8a4e}
+
+    /* Time picker */
+    .time-grid{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:8px}
+    .time-card{background:white;border:3px solid #e8e8e8;border-radius:14px;padding:18px 22px;cursor:pointer;transition:all 0.2s;text-align:center;min-width:90px}
+    .time-card:hover{border-color:#2d8a4e;background:#f5fbf6}
+    .time-card.sel{border-color:#2d8a4e;background:#e8f0e9}
+    .time-card-icon{font-size:28px;margin-bottom:6px}
+    .time-card-label{font-weight:800;font-size:16px;color:#333}
+    .time-card-sub{font-size:11px;color:#999;margin-top:2px}
+
+    @media(max-width:600px){
+      .recipe-grid{grid-template-columns:1fr 1fr}
+      .form-row{grid-template-columns:1fr}
+      .check-grid{grid-template-columns:1fr}
+      .header h1{font-size:18px}
+      .modal{padding:20px}
+      .time-grid{gap:8px}
+      .time-card{padding:12px 14px;min-width:75px}
+    }
+    @media(max-width:380px){.recipe-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useCallback, useMemo, useRef } = React;
+
+// ─────────────────────────────────────────────
+// CONSTANTS
+// ─────────────────────────────────────────────
+const FRACTIONS = [
+  {val:0.25, label:'¼',  display:'¼'},
+  {val:0.5,  label:'½',  display:'½'},
+  {val:0.75, label:'¾',  display:'¾'},
+  {val:1.0,  label:'Full', display:'Full'},
+];
+const CONTAINERS = ['bag','box','can','bottle','carton','jar','package','container','bunch','loaf'];
+const LOCATIONS = [['fridge','🧊 Fridge'],['freezer','❄️ Freezer'],['pantry','🥫 Pantry']];
+const CUISINES  = ['All','American','Italian','Mexican','Asian','Mediterranean'];
+const MOODS     = ['Any Mood','comfort','quick','light','hearty','fresh','cozy','sweet','healthy'];
+const FLAVORS   = ['spicy','salty','sweet','savory','umami'];
+const TIMES     = [
+  {val:10, icon:'⚡', label:'10 min', sub:'Lightning fast'},
+  {val:20, icon:'🏃', label:'20 min', sub:'Quick & easy'},
+  {val:30, icon:'👨‍🍳', label:'30 min', sub:'Standard cook'},
+  {val:40, icon:'🧑‍🍳', label:'40 min', sub:'A bit more time'},
+  {val:60, icon:'🍲', label:'60 min', sub:'Worth the wait'},
+];
+
+// ─────────────────────────────────────────────
+// RECIPE DATABASE (35 beginner recipes)
+// ─────────────────────────────────────────────
+const RECIPES = [
+  {id:1,name:"Scrambled Eggs & Toast",emoji:"🍳",cuisine:"American",mood:["quick","comfort","light"],flavor:["salty","savory"],minutes:10,
+   ingredients:[{name:"eggs",qty:"¼ carton"},{name:"butter",qty:"small amount"},{name:"bread",qty:"a few slices"},{name:"milk",qty:"splash"},{name:"salt",qty:"pinch"}],
+   instructions:["Crack 2–3 eggs into a bowl. Add a splash of milk, a pinch of salt, and pepper. Whisk well.","Toast your bread until golden.","Melt butter in a non-stick pan over medium-low heat.","Pour in egg mixture. Gently push from edges to center with a spatula.","Cook until just set — still slightly glossy. Don't overcook!","Serve immediately on or alongside the toast."]},
+
+  {id:2,name:"French Toast",emoji:"🍞",cuisine:"American",mood:["comfort","sweet"],flavor:["sweet","savory"],minutes:15,
+   ingredients:[{name:"bread",qty:"a few slices"},{name:"eggs",qty:"¼ carton"},{name:"milk",qty:"splash"},{name:"butter",qty:"small amount"},{name:"cinnamon",qty:"pinch"},{name:"maple syrup",qty:"drizzle"}],
+   instructions:["Whisk 2 eggs, a splash of milk, and a pinch of cinnamon in a shallow bowl.","Heat butter in a skillet over medium heat.","Dip each bread slice in the egg mix — 10 seconds per side.","Cook 2–3 min per side until golden brown.","Serve with maple syrup and a sprinkle of powdered sugar if you have it."]},
+
+  {id:3,name:"Avocado Toast",emoji:"🥑",cuisine:"American",mood:["quick","light","fresh"],flavor:["savory","salty"],minutes:10,
+   ingredients:[{name:"bread",qty:"a few slices"},{name:"avocado",qty:"½ bag"},{name:"lemon",qty:"small amount"},{name:"salt",qty:"pinch"},{name:"red pepper flakes",qty:"pinch"}],
+   instructions:["Toast bread until golden and crisp.","Halve avocado, scoop flesh into a bowl.","Mash with a fork. Add lemon juice, salt, and pepper.","Spread generously on toast.","Top with red pepper flakes. Optional: add a fried egg or everything bagel seasoning."]},
+
+  {id:4,name:"Pancakes",emoji:"🥞",cuisine:"American",mood:["comfort","sweet","weekend"],flavor:["sweet"],minutes:20,
+   ingredients:[{name:"flour",qty:"½ bag"},{name:"eggs",qty:"¼ carton"},{name:"milk",qty:"splash"},{name:"butter",qty:"small amount"},{name:"baking powder",qty:"pinch"},{name:"sugar",qty:"small amount"},{name:"salt",qty:"pinch"}],
+   instructions:["Mix flour, baking powder, a pinch of sugar, and salt in a bowl.","Whisk 1 egg, ¾ cup milk, and 2 tbsp melted butter in another bowl.","Combine wet and dry — stir until just mixed (lumps are fine!).","Heat a non-stick pan over medium, lightly butter it.","Pour ¼ cup batter per pancake. Cook until bubbles form (2–3 min), flip, cook 1 more min.","Serve with maple syrup or fruit."]},
+
+  {id:5,name:"Overnight Oats",emoji:"🥣",cuisine:"American",mood:["quick","light","healthy"],flavor:["sweet"],minutes:5,
+   ingredients:[{name:"oats",qty:"½ bag"},{name:"milk",qty:"splash"},{name:"yogurt",qty:"½ container"},{name:"honey",qty:"drizzle"},{name:"berries",qty:"handful"}],
+   instructions:["Add oats, milk, and yogurt to a jar or bowl.","Stir in honey and a pinch of cinnamon if you like.","Top with berries or sliced banana.","Cover and refrigerate overnight — at least 4 hours.","Grab and eat straight from the jar. Zero cooking!"]},
+
+  {id:6,name:"Breakfast Tacos",emoji:"🌮",cuisine:"Mexican",mood:["quick","comfort"],flavor:["savory","spicy"],minutes:15,
+   ingredients:[{name:"tortillas",qty:"½ bag"},{name:"eggs",qty:"¼ carton"},{name:"cheese",qty:"¼ bag"},{name:"salsa",qty:"½ jar"},{name:"butter",qty:"small amount"}],
+   instructions:["Warm tortillas in a dry skillet or over a gas flame, 30 sec per side.","Scramble eggs in butter over medium-low until just set.","Divide eggs among tortillas.","Top with cheese, salsa, and any extras (avocado, sour cream, hot sauce).","Serve immediately."]},
+
+  {id:7,name:"Grilled Cheese",emoji:"🧀",cuisine:"American",mood:["comfort","quick"],flavor:["salty","savory"],minutes:10,
+   ingredients:[{name:"bread",qty:"a few slices"},{name:"cheese",qty:"¼ bag"},{name:"butter",qty:"small amount"}],
+   instructions:["Butter one side of each bread slice.","Heat a skillet over medium-low heat.","Place one slice butter-side-down. Layer cheese on top.","Add second slice butter-side-up.","Cook 3–4 min until golden, flip carefully, cook 2–3 more min until cheese melts.","Slice diagonally. Serve hot."]},
+
+  {id:8,name:"Tomato Soup",emoji:"🍅",cuisine:"American",mood:["comfort","light"],flavor:["savory","sweet"],minutes:20,
+   ingredients:[{name:"canned tomatoes",qty:"1 can"},{name:"butter",qty:"small amount"},{name:"onion",qty:"½ bag"},{name:"garlic",qty:"¼ bulb"},{name:"broth",qty:"½ carton"},{name:"cream",qty:"splash"},{name:"salt",qty:"pinch"}],
+   instructions:["Melt butter in a pot over medium. Add diced onion, cook 5 min.","Add minced garlic, cook 1 more min.","Pour in canned tomatoes and broth. Simmer 10 min.","Blend smooth with an immersion blender (or regular blender — careful, it's hot!).","Stir in a splash of cream. Season generously.","Serve hot — perfect with grilled cheese!"]},
+
+  {id:9,name:"BLT Sandwich",emoji:"🥓",cuisine:"American",mood:["quick","fresh"],flavor:["salty","savory"],minutes:10,
+   ingredients:[{name:"bread",qty:"a few slices"},{name:"bacon",qty:"½ package"},{name:"lettuce",qty:"handful"},{name:"tomato",qty:"½ bag"},{name:"mayonnaise",qty:"¼ jar"}],
+   instructions:["Cook bacon in a skillet over medium until crispy. Drain on paper towels.","Toast bread to your liking.","Spread mayo generously on both slices.","Layer lettuce, sliced tomato, and bacon on one slice.","Season tomato with salt and pepper. Top with second slice. Cut diagonally."]},
+
+  {id:10,name:"Mac & Cheese",emoji:"🧆",cuisine:"American",mood:["comfort","quick"],flavor:["salty","savory"],minutes:20,
+   ingredients:[{name:"pasta",qty:"½ bag"},{name:"butter",qty:"small amount"},{name:"milk",qty:"splash"},{name:"cheddar cheese",qty:"½ bag"},{name:"salt",qty:"pinch"}],
+   instructions:["Boil pasta in salted water per package instructions. Drain.","Return pot to medium-low. Melt butter, add a splash of milk, heat until warm.","Add shredded cheese in handfuls, stirring until smooth.","Add pasta back in, toss to coat.","Season with salt, pepper, and a pinch of mustard powder if you have it.","Serve immediately while creamy."]},
+
+  {id:11,name:"Spaghetti Aglio e Olio",emoji:"🍝",cuisine:"Italian",mood:["comfort","quick"],flavor:["salty","savory"],minutes:20,
+   ingredients:[{name:"spaghetti",qty:"½ bag"},{name:"garlic",qty:"½ bulb"},{name:"olive oil",qty:"¼ bottle"},{name:"red pepper flakes",qty:"pinch"},{name:"parmesan",qty:"¼ bag"},{name:"parsley",qty:"handful"}],
+   instructions:["Cook spaghetti in salted boiling water. Reserve 1 cup pasta water before draining.","While pasta cooks, thinly slice garlic.","Warm olive oil in a large pan over medium-low. Add garlic and pepper flakes.","Cook garlic slowly 4–5 min until golden — don't burn it. Remove from heat.","Add drained pasta to pan. Toss with a splash of pasta water until silky.","Finish with parmesan and chopped parsley."]},
+
+  {id:12,name:"Pasta with Marinara",emoji:"🍅",cuisine:"Italian",mood:["comfort","quick"],flavor:["savory","sweet"],minutes:20,
+   ingredients:[{name:"pasta",qty:"½ bag"},{name:"canned tomatoes",qty:"1 can"},{name:"garlic",qty:"¼ bulb"},{name:"olive oil",qty:"¼ bottle"},{name:"basil",qty:"handful"},{name:"salt",qty:"pinch"}],
+   instructions:["Cook pasta in salted boiling water. Reserve pasta water before draining.","Heat olive oil in a saucepan. Add minced garlic, cook 1–2 min (don't burn!).","Pour in canned tomatoes, crush with a spoon. Season with salt.","Simmer 15 min until slightly thickened. Tear in fresh basil.","Toss drained pasta in sauce with a splash of pasta water.","Serve with parmesan."]},
+
+  {id:13,name:"Pesto Pasta",emoji:"🌿",cuisine:"Italian",mood:["quick","fresh","light"],flavor:["savory","salty"],minutes:15,
+   ingredients:[{name:"pasta",qty:"½ bag"},{name:"pesto",qty:"½ jar"},{name:"cherry tomatoes",qty:"½ bag"},{name:"parmesan",qty:"¼ bag"},{name:"olive oil",qty:"small amount"}],
+   instructions:["Cook pasta in well-salted water. Reserve ½ cup pasta water before draining.","Halve cherry tomatoes.","Drain pasta, return to pot off heat. Add pesto and a splash of pasta water, toss.","Fold in cherry tomatoes.","Plate and top with parmesan and a drizzle of olive oil."]},
+
+  {id:14,name:"Caprese Salad",emoji:"🫙",cuisine:"Italian",mood:["light","fresh","quick"],flavor:["savory","sweet"],minutes:5,
+   ingredients:[{name:"fresh mozzarella",qty:"½ package"},{name:"tomatoes",qty:"½ bag"},{name:"basil",qty:"handful"},{name:"olive oil",qty:"drizzle"},{name:"balsamic",qty:"drizzle"},{name:"salt",qty:"pinch"}],
+   instructions:["Slice mozzarella and tomatoes into ¼-inch rounds.","Arrange alternating slices on a plate.","Tuck fresh basil leaves between slices.","Drizzle with olive oil and balsamic.","Season with flaky salt and cracked pepper. Serve immediately."]},
+
+  {id:15,name:"Quesadillas",emoji:"🫓",cuisine:"Mexican",mood:["quick","comfort"],flavor:["salty","savory"],minutes:10,
+   ingredients:[{name:"tortillas",qty:"½ bag"},{name:"cheese",qty:"½ bag"},{name:"butter",qty:"small amount"},{name:"salsa",qty:"½ jar"}],
+   instructions:["Lightly butter one side of each tortilla.","Heat a skillet over medium. Place one tortilla butter-side-down.","Spread cheese evenly over half the tortilla.","Fold the empty half over to make a half-moon.","Cook 2–3 min until golden, flip, cook 1–2 more min.","Cut into wedges, serve with salsa and sour cream."]},
+
+  {id:16,name:"Black Bean Tacos",emoji:"🌮",cuisine:"Mexican",mood:["quick","light","healthy"],flavor:["savory","spicy"],minutes:15,
+   ingredients:[{name:"canned black beans",qty:"1 can"},{name:"tortillas",qty:"½ bag"},{name:"cumin",qty:"pinch"},{name:"garlic",qty:"¼ bulb"},{name:"lime",qty:"½ bag"},{name:"cheese",qty:"¼ bag"},{name:"salsa",qty:"½ jar"}],
+   instructions:["Drain and rinse black beans. Heat in a pan with minced garlic, cumin, salt, and a splash of water.","Mash lightly with a fork — leave some beans whole. Cook 5 min.","Warm tortillas in a dry skillet or over a flame.","Fill each tortilla with bean mixture.","Top with cheese, salsa, sour cream, avocado, and a squeeze of lime."]},
+
+  {id:17,name:"Chicken Burrito Bowl",emoji:"🍲",cuisine:"Mexican",mood:["hearty","comfort"],flavor:["savory","spicy"],minutes:25,
+   ingredients:[{name:"chicken",qty:"½ package"},{name:"rice",qty:"½ bag"},{name:"canned black beans",qty:"1 can"},{name:"cumin",qty:"pinch"},{name:"lime",qty:"½ bag"},{name:"olive oil",qty:"small amount"},{name:"salsa",qty:"½ jar"},{name:"cheese",qty:"¼ bag"}],
+   instructions:["Cook rice per package. Fluff with a fork, squeeze in lime, add a pinch of salt.","Slice chicken into strips, season with cumin, garlic powder, salt, and pepper.","Heat oil in a skillet over medium-high. Cook chicken 5–6 min per side. Rest 3 min, then slice.","Warm black beans with cumin and salt.","Build your bowl: rice → beans → chicken → salsa → cheese → any extras.","Finish with a squeeze of lime."]},
+
+  {id:18,name:"Guacamole & Chips",emoji:"🥑",cuisine:"Mexican",mood:["light","quick","snack"],flavor:["savory","spicy"],minutes:10,
+   ingredients:[{name:"avocado",qty:"Full bag"},{name:"lime",qty:"½ bag"},{name:"red onion",qty:"¼ bag"},{name:"cilantro",qty:"handful"},{name:"jalapeño",qty:"¼ bag"},{name:"salt",qty:"pinch"},{name:"tortilla chips",qty:"½ bag"}],
+   instructions:["Halve and pit avocados. Scoop flesh into a bowl.","Juice lime directly into bowl — keeps the guac green.","Mash to your preferred texture.","Fold in finely diced red onion, jalapeño, and cilantro.","Season well with salt. Taste and adjust lime.","Serve with chips. Press plastic wrap directly on surface to store."]},
+
+  {id:19,name:"Fried Rice",emoji:"🍚",cuisine:"Asian",mood:["quick","comfort","hearty"],flavor:["salty","savory","umami"],minutes:15,
+   ingredients:[{name:"cooked rice",qty:"½ bag"},{name:"eggs",qty:"¼ carton"},{name:"soy sauce",qty:"¼ bottle"},{name:"sesame oil",qty:"small amount"},{name:"garlic",qty:"¼ bulb"},{name:"frozen peas",qty:"½ bag"},{name:"green onion",qty:"½ bunch"},{name:"oil",qty:"small amount"}],
+   instructions:["Day-old rice works best — less sticky. Heat oil in a wok over high heat.","Add minced garlic, stir-fry 30 seconds.","Push to the side. Crack 2 eggs in the center, scramble until just set.","Add rice, break up clumps, stir-fry everything 2–3 min.","Add frozen peas. Drizzle in soy sauce and sesame oil. Toss together.","Cook 1 more min. Top with sliced green onions."]},
+
+  {id:20,name:"Quick Ramen",emoji:"🍜",cuisine:"Asian",mood:["comfort","quick","cozy"],flavor:["salty","umami","spicy"],minutes:15,
+   ingredients:[{name:"ramen noodles",qty:"½ package"},{name:"eggs",qty:"¼ carton"},{name:"soy sauce",qty:"¼ bottle"},{name:"sesame oil",qty:"small amount"},{name:"green onion",qty:"½ bunch"},{name:"garlic",qty:"¼ bulb"},{name:"broth",qty:"½ carton"}],
+   instructions:["Bring broth to a boil. Add minced garlic and soy sauce. Simmer 5 min.","Soft-boil eggs: lower into gently simmering water for exactly 7 minutes. Transfer to ice water.","Cook noodles in broth per package (usually 3 min). Discard or partially use spice packet.","Peel and halve the soft-boiled eggs.","Ladle ramen into bowls. Top with halved egg, green onions, and a drizzle of sesame oil.","Optional extras: corn, spinach, sriracha, or a pat of butter."]},
+
+  {id:21,name:"Vegetable Stir-Fry",emoji:"🥦",cuisine:"Asian",mood:["quick","light","healthy"],flavor:["savory","umami"],minutes:15,
+   ingredients:[{name:"broccoli",qty:"½ bag"},{name:"bell pepper",qty:"½ bag"},{name:"carrots",qty:"½ bag"},{name:"soy sauce",qty:"¼ bottle"},{name:"garlic",qty:"¼ bulb"},{name:"ginger",qty:"small amount"},{name:"sesame oil",qty:"small amount"},{name:"oil",qty:"small amount"}],
+   instructions:["Chop all vegetables into similar-sized pieces.","Mix soy sauce, sesame oil, and a pinch of sugar — this is your sauce.","Heat oil in a wok over high heat until smoking.","Add garlic and ginger, stir-fry 30 seconds.","Add harder veggies first (carrots, broccoli). Toss constantly 3–4 min.","Add softer veggies. Pour sauce over everything. Cook 2 more min. Serve over rice."]},
+
+  {id:22,name:"Peanut Noodles",emoji:"🥜",cuisine:"Asian",mood:["quick","comfort","hearty"],flavor:["savory","sweet","umami"],minutes:15,
+   ingredients:[{name:"noodles",qty:"½ bag"},{name:"peanut butter",qty:"¼ jar"},{name:"soy sauce",qty:"¼ bottle"},{name:"lime",qty:"½ bag"},{name:"honey",qty:"drizzle"},{name:"garlic",qty:"¼ bulb"},{name:"sesame oil",qty:"small amount"},{name:"red pepper flakes",qty:"pinch"}],
+   instructions:["Cook noodles per package. Reserve ¼ cup pasta water.","Whisk peanut butter, soy sauce, lime juice, honey, minced garlic, sesame oil, and pepper flakes.","Add 2–3 tbsp pasta water to thin the sauce to pourable consistency.","Toss hot noodles with peanut sauce until fully coated.","Top with cucumber, green onion, and crushed peanuts.","Serve warm or at room temperature."]},
+
+  {id:23,name:"Teriyaki Chicken",emoji:"🍗",cuisine:"Asian",mood:["hearty","comfort"],flavor:["sweet","salty","savory"],minutes:20,
+   ingredients:[{name:"chicken",qty:"½ package"},{name:"soy sauce",qty:"¼ bottle"},{name:"honey",qty:"drizzle"},{name:"garlic",qty:"¼ bulb"},{name:"ginger",qty:"small amount"},{name:"sesame oil",qty:"small amount"},{name:"oil",qty:"small amount"}],
+   instructions:["Mix soy sauce, honey, minced garlic, and ginger — your teriyaki sauce.","Season chicken with salt and pepper.","Heat oil in a skillet over medium-high. Cook chicken smooth-side-down.","Cook 5–6 min without moving until golden. Flip.","Pour sauce over chicken. Cook 5–6 more min, spooning sauce over chicken every minute.","Sauce should be sticky and glossy. Slice and serve over rice."]},
+
+  {id:24,name:"Greek Salad",emoji:"🫒",cuisine:"Mediterranean",mood:["light","fresh","quick"],flavor:["salty","savory"],minutes:10,
+   ingredients:[{name:"cucumber",qty:"½ bag"},{name:"tomatoes",qty:"½ bag"},{name:"red onion",qty:"¼ bag"},{name:"feta cheese",qty:"½ package"},{name:"olives",qty:"½ jar"},{name:"olive oil",qty:"¼ bottle"},{name:"oregano",qty:"pinch"},{name:"lemon",qty:"½ bag"}],
+   instructions:["Chop cucumber into half-moons. Quarter tomatoes. Thinly slice red onion.","Combine in a large bowl with olives.","Whisk olive oil, lemon juice, and oregano for the dressing.","Pour dressing over salad and toss gently.","Crumble feta over the top (don't toss it — let it sit).","Season with salt and pepper. Serve immediately or chill 10 min."]},
+
+  {id:25,name:"Shakshuka",emoji:"🍳",cuisine:"Mediterranean",mood:["comfort","hearty","weekend"],flavor:["spicy","savory","sweet"],minutes:25,
+   ingredients:[{name:"eggs",qty:"¼ carton"},{name:"canned tomatoes",qty:"1 can"},{name:"bell pepper",qty:"½ bag"},{name:"onion",qty:"½ bag"},{name:"garlic",qty:"¼ bulb"},{name:"cumin",qty:"pinch"},{name:"paprika",qty:"pinch"},{name:"olive oil",qty:"small amount"},{name:"feta",qty:"¼ package"}],
+   instructions:["Heat olive oil in a large skillet. Add diced onion and bell pepper. Cook 5–7 min until soft.","Add minced garlic, cumin, and paprika. Cook 1 min until fragrant.","Pour in canned tomatoes, crush with a spoon. Season generously. Simmer 10 min.","Make 4 wells in the sauce. Crack an egg into each well.","Cover and cook 5–8 min until whites are set but yolks still runny.","Crumble feta on top. Serve from the pan with crusty bread."]},
+
+  {id:26,name:"Lemon Garlic Shrimp",emoji:"🍤",cuisine:"Mediterranean",mood:["quick","light","impressive"],flavor:["savory","salty"],minutes:15,
+   ingredients:[{name:"shrimp",qty:"½ bag"},{name:"garlic",qty:"¼ bulb"},{name:"butter",qty:"small amount"},{name:"lemon",qty:"½ bag"},{name:"parsley",qty:"handful"},{name:"red pepper flakes",qty:"pinch"},{name:"olive oil",qty:"small amount"}],
+   instructions:["Pat shrimp dry. Season with salt, pepper, and red pepper flakes.","Heat olive oil and a bit of butter in a pan over medium-high.","Add shrimp in a single layer. Cook 1–2 min per side until pink and curled.","Remove shrimp. Add more butter and garlic to the pan. Cook 1 min.","Squeeze in lemon juice. Return shrimp to pan and toss.","Garnish with fresh parsley. Serve over pasta, rice, or with bread."]},
+
+  {id:27,name:"Chicken Noodle Soup",emoji:"🍲",cuisine:"American",mood:["comfort","cozy","healing"],flavor:["salty","savory"],minutes:25,
+   ingredients:[{name:"chicken",qty:"½ package"},{name:"egg noodles",qty:"½ bag"},{name:"carrots",qty:"½ bag"},{name:"celery",qty:"½ bag"},{name:"broth",qty:"Full carton"},{name:"garlic",qty:"¼ bulb"},{name:"onion",qty:"½ bag"},{name:"thyme",qty:"pinch"}],
+   instructions:["Bring broth to a boil. Add whole chicken breast.","Simmer 12–14 min until cooked through. Remove and shred with two forks.","Add diced onion, carrots, and celery to broth. Cook 5 min.","Add minced garlic, thyme, egg noodles, and shredded chicken.","Cook noodles until tender, 5–7 min. Season generously.","Ladle into bowls and serve hot."]},
+
+  {id:28,name:"Lentil Soup",emoji:"🥣",cuisine:"Mediterranean",mood:["comfort","hearty","healthy"],flavor:["savory","earthy"],minutes:30,
+   ingredients:[{name:"red lentils",qty:"½ bag"},{name:"onion",qty:"½ bag"},{name:"carrots",qty:"½ bag"},{name:"garlic",qty:"¼ bulb"},{name:"cumin",qty:"pinch"},{name:"canned tomatoes",qty:"1 can"},{name:"broth",qty:"¾ carton"},{name:"olive oil",qty:"small amount"},{name:"lemon",qty:"½ bag"}],
+   instructions:["Heat olive oil in a pot. Add diced onion and carrots, cook 5 min.","Add minced garlic and cumin, cook 1 more min.","Rinse lentils. Add to pot with canned tomatoes and broth.","Bring to a boil, then reduce heat. Simmer 20 min until lentils are completely soft.","Blend half the soup for a creamy-chunky texture.","Squeeze in lemon juice. Season well. Serve hot."]},
+
+  {id:29,name:"Turkey Wrap",emoji:"🫔",cuisine:"American",mood:["quick","light","fresh"],flavor:["salty","savory"],minutes:5,
+   ingredients:[{name:"tortillas",qty:"¼ bag"},{name:"turkey",qty:"½ package"},{name:"lettuce",qty:"handful"},{name:"tomato",qty:"¼ bag"},{name:"avocado",qty:"¼ bag"},{name:"mustard",qty:"small amount"}],
+   instructions:["Lay tortilla flat on a cutting board.","Spread mustard or mayo across the center.","Layer turkey, lettuce, sliced tomato, and avocado.","Season with salt and pepper.","Fold in the sides, roll up tightly from the bottom. Cut diagonally.","Serve immediately or wrap in foil for later."]},
+
+  {id:30,name:"Egg Salad Sandwich",emoji:"🥚",cuisine:"American",mood:["quick","comfort"],flavor:["salty","savory"],minutes:15,
+   ingredients:[{name:"eggs",qty:"¼ carton"},{name:"mayonnaise",qty:"¼ jar"},{name:"mustard",qty:"small amount"},{name:"celery",qty:"¼ bag"},{name:"bread",qty:"a few slices"},{name:"salt",qty:"pinch"}],
+   instructions:["Boil eggs: place in cold water, bring to a boil, cover, remove from heat, wait 12 min.","Transfer to ice water to stop cooking. Peel when cool.","Dice eggs and celery. Mix with mayo, mustard, salt, and pepper.","Toast bread if you like.","Spread egg salad generously. Add lettuce if you have it.","Serve immediately."]},
+
+  {id:31,name:"Veggie Frittata",emoji:"🥘",cuisine:"Italian",mood:["comfort","weekend","hearty"],flavor:["salty","savory"],minutes:25,
+   ingredients:[{name:"eggs",qty:"½ carton"},{name:"spinach",qty:"½ bag"},{name:"bell pepper",qty:"½ bag"},{name:"cheese",qty:"¼ bag"},{name:"onion",qty:"¼ bag"},{name:"olive oil",qty:"small amount"},{name:"milk",qty:"splash"},{name:"salt",qty:"pinch"}],
+   instructions:["Preheat oven broiler.","Whisk 6 eggs with a splash of milk, salt, and pepper.","Heat olive oil in an oven-safe skillet. Cook diced onion and pepper 5 min.","Add spinach — cook until wilted, about 1 min.","Pour egg mixture over vegetables. Sprinkle cheese on top.","Cook on stove 3–4 min until edges set. Move to broiler 3–4 min until golden. Slice like a pie."]},
+
+  {id:32,name:"Miso Soup",emoji:"🍵",cuisine:"Asian",mood:["light","cozy","quick"],flavor:["salty","umami"],minutes:10,
+   ingredients:[{name:"miso paste",qty:"¼ jar"},{name:"tofu",qty:"½ package"},{name:"green onion",qty:"½ bunch"},{name:"seaweed",qty:"small amount"}],
+   instructions:["Heat 4 cups water in a pot until just below boiling — don't boil miso water.","Cut tofu into small cubes and add to the pot.","Ladle a small amount of hot water into a bowl with miso paste. Whisk until smooth.","Pour dissolved miso back into the pot. Stir gently.","Add dried seaweed and sliced green onions.","Serve immediately in small bowls."]},
+
+  {id:33,name:"Hummus & Pita",emoji:"🫘",cuisine:"Mediterranean",mood:["light","quick","snack"],flavor:["savory","salty"],minutes:5,
+   ingredients:[{name:"canned chickpeas",qty:"1 can"},{name:"tahini",qty:"¼ jar"},{name:"lemon",qty:"½ bag"},{name:"garlic",qty:"¼ bulb"},{name:"olive oil",qty:"small amount"},{name:"pita bread",qty:"½ bag"},{name:"salt",qty:"pinch"}],
+   instructions:["Drain chickpeas, reserve the liquid.","Blend chickpeas, tahini, lemon juice, garlic, and salt.","Drizzle in olive oil and chickpea liquid until smooth and creamy.","Taste and adjust salt and lemon.","Spread into a bowl, drizzle with olive oil, sprinkle paprika.","Warm pitas and serve alongside."]},
+
+  {id:34,name:"Tuna Melt",emoji:"🐟",cuisine:"American",mood:["quick","comfort"],flavor:["salty","savory"],minutes:15,
+   ingredients:[{name:"canned tuna",qty:"1 can"},{name:"bread",qty:"a few slices"},{name:"mayonnaise",qty:"¼ jar"},{name:"cheese",qty:"¼ bag"},{name:"celery",qty:"¼ bag"},{name:"lemon",qty:"¼ bag"}],
+   instructions:["Drain tuna well. Mix with mayo, diced celery, a squeeze of lemon, salt, and pepper.","Toast bread lightly.","Spread tuna mixture on each slice. Top with cheese.","Broil on a baking sheet 2–3 min until cheese is bubbling and golden.","Serve open-face or press together as a sandwich."]},
+
+  {id:35,name:"Caprese Grilled Sandwich",emoji:"🧀",cuisine:"Italian",mood:["quick","comfort","light"],flavor:["savory","sweet"],minutes:10,
+   ingredients:[{name:"bread",qty:"a few slices"},{name:"fresh mozzarella",qty:"¼ package"},{name:"tomato",qty:"¼ bag"},{name:"basil",qty:"handful"},{name:"butter",qty:"small amount"},{name:"balsamic",qty:"drizzle"}],
+   instructions:["Butter the outside of each bread slice.","Layer mozzarella, sliced tomato, and basil on the inside.","Drizzle a little balsamic inside if using.","Grill in a pan over medium 3–4 min per side until bread is golden and cheese is melty.","Slice and serve immediately — the cheese should be wonderfully gooey."]},
+
+  // ── INDIAN ──
+  {id:36,name:"Egg Bhurji",emoji:"🍳",cuisine:"Indian",mood:["quick","comfort","spicy"],flavor:["spicy","savory"],minutes:15,
+   ingredients:[{name:"eggs",qty:"¼ carton"},{name:"onion",qty:"½ bag"},{name:"tomato",qty:"½ bag"},{name:"butter",qty:"small amount"},{name:"cumin",qty:"pinch"},{name:"turmeric",qty:"pinch"},{name:"red pepper flakes",qty:"pinch"},{name:"salt",qty:"pinch"}],
+   instructions:["Heat butter in a pan over medium heat. Add cumin — it will sizzle in about 30 seconds.","Add finely diced onion. Cook 4–5 minutes until golden.","Add diced tomato, turmeric, red pepper flakes, and salt. Cook 3 minutes until tomatoes break down.","Crack in 3–4 eggs directly into the pan. Stir constantly, scrambling them into the spiced mixture.","Cook 2–3 minutes — you want the eggs soft and well mixed with the masala.","Serve hot with bread, tortillas, or rice. Squeeze lemon on top if you have it."]},
+
+  {id:37,name:"Chana Masala",emoji:"🫘",cuisine:"Indian",mood:["hearty","comfort","healthy"],flavor:["spicy","savory"],minutes:25,
+   ingredients:[{name:"canned chickpeas",qty:"1 can"},{name:"canned tomatoes",qty:"1 can"},{name:"onion",qty:"½ bag"},{name:"garlic",qty:"¼ bulb"},{name:"cumin",qty:"pinch"},{name:"paprika",qty:"pinch"},{name:"olive oil",qty:"small amount"},{name:"salt",qty:"pinch"},{name:"lemon",qty:"½ bag"}],
+   instructions:["Heat oil in a pot over medium. Add diced onion — cook 6–7 minutes until deeply golden.","Add minced garlic and cook 1 minute. Add cumin, paprika, and a pinch of cayenne if you like heat.","Pour in canned tomatoes, crush them with a spoon. Season generously with salt.","Simmer 8–10 minutes until sauce thickens.","Drain and rinse chickpeas. Add to the pot, stir to coat. Cook 5 minutes more.","Finish with a squeeze of lemon. Serve over rice or with warm bread."]},
+
+  {id:38,name:"Simple Dal",emoji:"🍲",cuisine:"Indian",mood:["comfort","hearty","healthy"],flavor:["savory","earthy"],minutes:30,
+   ingredients:[{name:"red lentils",qty:"½ bag"},{name:"onion",qty:"½ bag"},{name:"garlic",qty:"¼ bulb"},{name:"butter",qty:"small amount"},{name:"cumin",qty:"pinch"},{name:"turmeric",qty:"pinch"},{name:"salt",qty:"pinch"},{name:"lemon",qty:"½ bag"}],
+   instructions:["Rinse red lentils until water runs clear.","Add lentils to a pot with 3 cups water and a pinch of turmeric. Bring to a boil, then simmer 15–18 minutes, stirring occasionally, until lentils are completely soft and creamy.","Meanwhile, heat butter in a small pan over medium. Add cumin — sizzle 30 seconds.","Add finely diced onion and garlic. Cook 7–8 minutes until golden.","Pour the onion mixture over the cooked lentils. Stir everything together.","Season generously with salt and a squeeze of lemon. Serve over rice."]},
+
+  {id:39,name:"Raita",emoji:"🥣",cuisine:"Indian",mood:["quick","light","fresh"],flavor:["sweet","savory"],minutes:5,
+   ingredients:[{name:"yogurt",qty:"½ container"},{name:"cucumber",qty:"½ bag"},{name:"cumin",qty:"pinch"},{name:"salt",qty:"pinch"},{name:"cilantro",qty:"handful"}],
+   instructions:["Grate or finely dice the cucumber. Squeeze out excess water with your hands.","Stir into yogurt along with a pinch of cumin, salt, and a pinch of cayenne.","Fold in chopped cilantro.","Taste and adjust salt.","Serve chilled alongside any spicy dish — it cools everything down perfectly.","Keeps in the fridge for 2 days."]},
+
+  {id:40,name:"Spiced Butter Rice",emoji:"🍚",cuisine:"Indian",mood:["quick","comfort","light"],flavor:["savory","sweet"],minutes:20,
+   ingredients:[{name:"rice",qty:"½ bag"},{name:"butter",qty:"small amount"},{name:"cumin",qty:"pinch"},{name:"turmeric",qty:"pinch"},{name:"onion",qty:"¼ bag"},{name:"salt",qty:"pinch"},{name:"broth",qty:"½ carton"}],
+   instructions:["Rinse rice until water runs clear.","Melt butter in a pot over medium heat. Add cumin — let it sizzle 30 seconds.","Add finely diced onion and cook 3–4 minutes until lightly golden.","Add rice and turmeric. Stir to coat each grain in butter — about 1 minute.","Pour in broth (or water), season with salt. Bring to a boil.","Reduce to the lowest heat, cover tightly, cook 15 minutes. Remove from heat, rest 5 min, then fluff with a fork."]}
+];
+
+// ─────────────────────────────────────────────
+// DEFAULT INVENTORY
+// ─────────────────────────────────────────────
+const DEFAULT_INVENTORY = [
+  {id:'d1', name:'Eggs',          location:'fridge',  frac:1.0, container:'carton'},
+  {id:'d2', name:'Butter',        location:'fridge',  frac:1.0, container:'package'},
+  {id:'d3', name:'Milk',          location:'fridge',  frac:0.75,container:'carton'},
+  {id:'d4', name:'Cheddar Cheese',location:'fridge',  frac:0.5, container:'bag'},
+  {id:'d5', name:'Bread',         location:'pantry',  frac:1.0, container:'loaf'},
+  {id:'d6', name:'Pasta',         location:'pantry',  frac:0.5, container:'bag'},
+  {id:'d7', name:'Olive Oil',     location:'pantry',  frac:0.75,container:'bottle'},
+  {id:'d8', name:'Garlic',        location:'pantry',  frac:1.0, container:'bulb'},
+  {id:'d9', name:'Canned Tomatoes',location:'pantry', frac:1.0, container:'can'},
+  {id:'d10',name:'Chicken Broth', location:'pantry',  frac:0.5, container:'carton'},
+  {id:'d11',name:'Soy Sauce',     location:'pantry',  frac:0.75,container:'bottle'},
+  {id:'d12',name:'Rice',          location:'pantry',  frac:1.0, container:'bag'},
+  {id:'d13',name:'Frozen Peas',   location:'freezer', frac:1.0, container:'bag'},
+  {id:'d14',name:'Chicken',       location:'freezer', frac:0.5, container:'package'},
+  {id:'d15',name:'Salt',          location:'pantry',  frac:1.0, container:'container'},
+];
+
+// ─────────────────────────────────────────────
+// UTILITIES
+// ─────────────────────────────────────────────
+function fracLabel(f){ return FRACTIONS.find(x=>x.val===f)?.label || `${Math.round(f*100)}%`; }
+function stockColor(f){ if(f<=0.10) return '#e74c3c'; if(f<=0.25) return '#f4a226'; return '#2d8a4e'; }
+function stockClass(f){ if(f<=0.10) return 'critical'; if(f<=0.25) return 'low'; return ''; }
+
+function nameMatch(invName, ingName){
+  const n = invName.toLowerCase(), k = ingName.toLowerCase();
+  return n.includes(k) || k.includes(n) ||
+    (k.includes('pasta') && (n.includes('spaghetti')||n.includes('pasta')||n.includes('noodle'))) ||
+    (k.includes('noodle') && (n.includes('noodle')||n.includes('pasta')||n.includes('ramen'))) ||
+    (k.includes('chicken') && n.includes('chicken')) ||
+    (k.includes('tomato') && n.includes('tomato')) ||
+    (k.includes('cheese') && n.includes('cheese')) ||
+    (k.includes('broth') && (n.includes('broth')||n.includes('stock'))) ||
+    (k.includes('oil') && n.includes('oil')) ||
+    (k.includes('bean') && n.includes('bean'));
+}
+
+function matchRecipe(recipe, inventory){
+  let have=0; const missing=[];
+  recipe.ingredients.forEach(ing=>{
+    const match = inventory.find(i=>nameMatch(i.name, ing.name) && i.frac>0);
+    if(match) have++;
+    else missing.push(ing.name);
+  });
+  const total=recipe.ingredients.length;
+  return {pct:have/total, missing, have, total};
+}
+
+function getLowStock(inventory){ return inventory.filter(i=>i.frac<=0.25); }
+
+function uid(){ return Math.random().toString(36).slice(2,9); }
+function getCurrentMonth(){ const d=new Date(); return `${d.getFullYear()}-${d.getMonth()+1}`; }
+function formatDate(iso){ return new Date(iso).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
+function formatMonth(iso){ const [y,m]=iso.split('-'); return new Date(y,m-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'}); }
+
+// Convert image file to base64
+async function fileToBase64(file){
+  return new Promise((res,rej)=>{
+    const reader=new FileReader();
+    reader.onload=e=>res(e.target.result.split(',')[1]);
+    reader.onerror=rej;
+    reader.readAsDataURL(file);
+  });
+}
+
+// Call Claude API for image analysis
+async function analyzeImageWithClaude(base64, mimeType, apiKey){
+  const resp = await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{
+      'x-api-key':apiKey,
+      'anthropic-version':'2023-06-01',
+      'content-type':'application/json',
+      'anthropic-dangerous-direct-browser-access':'true'
+    },
+    body:JSON.stringify({
+      model:'claude-haiku-4-5-20251001',
+      max_tokens:1024,
+      messages:[{
+        role:'user',
+        content:[
+          {type:'image',source:{type:'base64',media_type:mimeType,data:base64}},
+          {type:'text',text:`Look at this image of food/grocery items. List every distinct food item you can identify.
+For each item return a JSON array entry with:
+- "name": the common name of the food item (e.g. "Pasta", "Black Beans", "Olive Oil")
+- "container": the type of container it's in (choose one: bag, box, can, bottle, carton, jar, package, container, bunch, loaf)
+Return ONLY a valid JSON array, no other text. Example: [{"name":"Pasta","container":"bag"},{"name":"Olive Oil","container":"bottle"}]`}
+        ]
+      }]
+    })
+  });
+  if(!resp.ok){
+    const err=await resp.json();
+    throw new Error(err.error?.message||'API error');
+  }
+  const data=await resp.json();
+  const text=data.content[0].text.trim();
+  // Extract JSON array from response
+  const match=text.match(/\[[\s\S]*\]/);
+  if(!match) throw new Error('Could not parse response');
+  return JSON.parse(match[0]);
+}
+
+// ─────────────────────────────────────────────
+// MAIN APP
+// ─────────────────────────────────────────────
+function App(){
+  const [prefs,setPrefs]           = useState(()=>JSON.parse(localStorage.getItem('kc_prefs')||'null'));
+  const [inventory,setInventory]   = useState(()=>JSON.parse(localStorage.getItem('kc_inv'))||DEFAULT_INVENTORY);
+  const [history,setHistory]       = useState(()=>JSON.parse(localStorage.getItem('kc_hist'))||[]);
+  const [apiKey,setApiKey]         = useState(()=>localStorage.getItem('kc_apikey')||'');
+  const [tab,setTab]               = useState('inventory');
+  const [toast,setToast]           = useState(null);
+  const [addModal,setAddModal]     = useState(null);
+  const [recipeModal,setRecipeModal] = useState(null);
+  const [alertsModal,setAlertsModal] = useState(false);
+  const [challengeModal,setChallengeModal] = useState(false);
+  const [scanModal,setScanModal]   = useState(false);
+  const [settingsModal,setSettingsModal] = useState(false);
+  const toastRef=useRef(null);
+
+  useEffect(()=>{ localStorage.setItem('kc_inv',JSON.stringify(inventory)); },[inventory]);
+  useEffect(()=>{ localStorage.setItem('kc_hist',JSON.stringify(history)); },[history]);
+  useEffect(()=>{ if(prefs) localStorage.setItem('kc_prefs',JSON.stringify(prefs)); },[prefs]);
+  useEffect(()=>{ localStorage.setItem('kc_apikey',apiKey); },[apiKey]);
+
+  useEffect(()=>{
+    if(!prefs) return;
+    const month=getCurrentMonth();
+    const done=history.some(h=>h.month===month&&h.challenge);
+    if(!done) setTimeout(()=>setChallengeModal(true),900);
+  },[prefs]);
+
+  const showToast=useCallback((msg,type='')=>{
+    clearTimeout(toastRef.current);
+    setToast({msg,type});
+    toastRef.current=setTimeout(()=>setToast(null),3800);
+  },[]);
+
+  const lowItems=useMemo(()=>getLowStock(inventory),[inventory]);
+
+  function saveItem(item){
+    if(item.id && inventory.find(i=>i.id===item.id)){
+      setInventory(prev=>prev.map(i=>i.id===item.id?item:i));
+    } else {
+      setInventory(prev=>[...prev,{...item,id:uid()}]);
+    }
+    setAddModal(null);
+    showToast(item.id?'✅ Item updated!':'✅ Item added!');
+  }
+
+  function saveMultipleItems(items){
+    setInventory(prev=>[...prev,...items.map(i=>({...i,id:uid()}))]);
+    showToast(`✅ Added ${items.length} item${items.length>1?'s':''} to inventory!`);
+  }
+
+  function deleteItem(id){
+    setInventory(prev=>prev.filter(i=>i.id!==id));
+    showToast('🗑️ Item removed.');
+  }
+
+  function cookRecipe(recipe){
+    const updated=[...inventory];
+    recipe.ingredients.forEach(ing=>{
+      const idx=updated.findIndex(i=>nameMatch(i.name,ing.name)&&i.frac>0);
+      if(idx>=0){
+        updated[idx]={...updated[idx],frac:Math.max(0,+(updated[idx].frac-0.25).toFixed(2))};
+      }
+    });
+    setInventory(updated);
+    const month=getCurrentMonth();
+    const isChallenge=!history.some(h=>h.month===month&&h.challenge);
+    setHistory(prev=>[{id:uid(),recipeId:recipe.id,name:recipe.name,emoji:recipe.emoji,date:new Date().toISOString(),month,challenge:isChallenge},...prev]);
+    setRecipeModal(null);
+    setChallengeModal(false);
+    showToast(`🍽️ "${recipe.name}" cooked! Inventory updated.`);
+    const newLow=getLowStock(updated);
+    if(newLow.length>0) setTimeout(()=>showToast(`⚠️ ${newLow[0].name} is running low!`,'warning'),4000);
+  }
+
+  if(!prefs) return <Onboarding onComplete={setPrefs}/>;
+
+  return(
+    <div>
+      <div className="header">
+        <h1>🍳 Kitchen Companion</h1>
+        <div className="header-right">
+          <button className="icon-btn" onClick={()=>setAlertsModal(true)} title="Stock alerts">
+            🔔{lowItems.length>0&&<span className="bell-badge">{lowItems.length}</span>}
+          </button>
+          <button className="icon-btn" onClick={()=>setSettingsModal(true)} title="Settings">⚙️</button>
+        </div>
+      </div>
+
+      <div className="tabs">
+        {[['inventory','🧊 Inventory'],['recipes','🍽️ Recipes'],['history','📋 History']].map(([k,l])=>(
+          <div key={k} className={`tab ${tab===k?'active':''}`} onClick={()=>setTab(k)}>{l}</div>
+        ))}
+      </div>
+
+      <div className="content">
+        {lowItems.length>0&&tab!=='history'&&(
+          <div className={`alert-banner ${lowItems.some(i=>i.frac<=0.10)?'critical':''}`}>
+            <div className="alert-title">{lowItems.some(i=>i.frac<=0.10)?'🚨':'⚠️'} Running Low</div>
+            <div className="alert-items">{lowItems.map(i=>`${i.name} (${fracLabel(i.frac)} ${i.container})`).join(' · ')}</div>
+          </div>
+        )}
+        {tab==='inventory'&&<InventoryTab inventory={inventory} onAdd={()=>setAddModal({item:null})} onEdit={item=>setAddModal({item})} onDelete={deleteItem} onScan={()=>setScanModal(true)} />}
+        {tab==='recipes'  &&<RecipeTab inventory={inventory} prefs={prefs} onSelect={r=>setRecipeModal(r)} />}
+        {tab==='history'  &&<HistoryTab history={history} />}
+      </div>
+
+      {addModal     &&<AddItemModal existing={addModal.item} onSave={saveItem} onClose={()=>setAddModal(null)} />}
+      {recipeModal  &&<RecipeDetailModal recipe={recipeModal} inventory={inventory} onCook={cookRecipe} onClose={()=>setRecipeModal(null)} />}
+      {alertsModal  &&<AlertsModal items={lowItems} onClose={()=>setAlertsModal(false)} />}
+      {challengeModal&&<MonthlyChallengeModal inventory={inventory} history={history} onCook={cookRecipe} onClose={()=>setChallengeModal(false)} />}
+      {scanModal    &&<ScanModal apiKey={apiKey} onSave={saveMultipleItems} onClose={()=>setScanModal(false)} />}
+      {settingsModal&&<SettingsModal prefs={prefs} apiKey={apiKey} onSave={(p,k)=>{setPrefs(p);setApiKey(k);setSettingsModal(false);showToast('✅ Settings saved!');}} onClose={()=>setSettingsModal(false)} />}
+      {toast&&<div className={`toast ${toast.type}`}>{toast.msg}</div>}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// ONBOARDING
+// ─────────────────────────────────────────────
+function Onboarding({onComplete}){
+  const [step,setStep]=useState(0);
+  const [data,setData]=useState({householdSize:2,cuisines:[],dietary:[],spiceLevel:'medium'});
+  const cuisineOpts=['🇺🇸 American','🇮🇹 Italian','🇲🇽 Mexican','🇯🇵 Asian','🇬🇷 Mediterranean','🌍 All cuisines'];
+  const dietaryOpts=['🥩 No restrictions','🥦 Vegetarian','🌱 Vegan','🐟 No red meat','🌾 Gluten-free'];
+  function toggle(field,val){ setData(d=>{const a=d[field];return{...d,[field]:a.includes(val)?a.filter(x=>x!==val):[...a,val]};}); }
+
+  const steps=[
+    {title:"Welcome to Kitchen Companion! 🍳",sub:"Let's build your kitchen profile so I can make perfect recipe recommendations. Quick — just 4 questions!",
+     content:()=><div><div className="form-label">How many people are you cooking for?</div><div className="scale-row">{[1,2,3,4,'5+'].map(n=><div key={n} className={`scale-btn ${data.householdSize===n?'sel':''}`} onClick={()=>setData(d=>({...d,householdSize:n}))}>{n}</div>)}</div></div>},
+    {title:"What cuisines do you love? 🌍",sub:"Select everything that sounds delicious to you.",
+     content:()=><div className="check-grid">{cuisineOpts.map(c=><div key={c} className={`check-item ${data.cuisines.includes(c)?'sel':''}`} onClick={()=>toggle('cuisines',c)}>{data.cuisines.includes(c)?'✅':'⬜'} {c}</div>)}</div>},
+    {title:"Any dietary preferences? 🥗",sub:"This helps filter recipes that work for you.",
+     content:()=><div className="check-grid">{dietaryOpts.map(d=><div key={d} className={`check-item ${data.dietary.includes(d)?'sel':''}`} onClick={()=>toggle('dietary',d)}>{data.dietary.includes(d)?'✅':'⬜'} {d}</div>)}</div>},
+    {title:"How do you feel about heat? 🌶️",sub:"Tailor your spice level recommendations.",
+     content:()=><div className="scale-row">{[['mild','😌 Mild'],['medium','🙂 Medium'],['spicy','🌶️ Spicy'],['very_spicy','🔥 Hot']].map(([v,l])=><div key={v} className={`scale-btn ${data.spiceLevel===v?'sel':''}`} onClick={()=>setData(d=>({...d,spiceLevel:v}))}>{l}</div>)}</div>},
+    {title:"You're all set! 🎉",sub:"Every recipe is beginner-friendly and under 60 active minutes. Before showing recommendations, I'll ask how much time you have. Let's get cooking!",
+     content:()=><div style={{textAlign:'center',padding:'16px 0'}}><div style={{fontSize:'68px',marginBottom:'14px'}}>🍽️</div><div style={{fontSize:'15px',color:'#666',lineHeight:'1.6'}}>Head to <strong>🍽️ Recipes</strong> to get your first recommendation,<br/>or <strong>🧊 Inventory</strong> to set up your pantry.</div></div>},
+  ];
+
+  const cur=steps[step];
+  const isLast=step===steps.length-1;
+  return(
+    <div className="onboarding-wrap">
+      <div className="onboarding-card">
+        <div className="ob-logo">🍳</div>
+        <div className="ob-title">{cur.title}</div>
+        <div className="ob-sub">{cur.sub}</div>
+        <div className="step-dots">{steps.map((_,i)=><div key={i} className={`dot ${i<step?'done':i===step?'active':''}`}/>)}</div>
+        {cur.content()}
+        <div className="ob-nav">
+          <button className="btn btn-secondary" onClick={()=>setStep(s=>Math.max(0,s-1))} style={{visibility:step===0?'hidden':'visible'}}>← Back</button>
+          <button className="btn btn-primary" onClick={()=>{ if(isLast) onComplete(data); else setStep(s=>s+1); }}>{isLast?'Start Cooking! 🍳':'Next →'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// INVENTORY TAB
+// ─────────────────────────────────────────────
+function InventoryTab({inventory,onAdd,onEdit,onDelete,onScan}){
+  return(
+    <div>
+      <div style={{display:'flex',gap:'10px',marginBottom:'20px',flexWrap:'wrap'}}>
+        <button className="btn btn-scan" onClick={onScan}>📸 Scan Items with AI</button>
+        <button className="btn btn-primary" onClick={onAdd}>+ Add Manually</button>
+      </div>
+      {LOCATIONS.map(([loc,label])=>{
+        const items=inventory.filter(i=>i.location===loc);
+        return(
+          <div key={loc} style={{marginBottom:'28px'}}>
+            <div className="section-header">
+              <div className="section-title">{label} <span style={{fontSize:'13px',fontWeight:'500',color:'#999'}}>({items.length} items)</span></div>
+            </div>
+            <div className="inventory-grid">
+              {items.map(item=>{
+                const cls=stockClass(item.frac);
+                return(
+                  <div key={item.id} className={`inv-item ${cls}`}>
+                    <div className="inv-name" title={item.name}>{item.name}</div>
+                    <div className="inv-qty">{fracLabel(item.frac)} {item.container}</div>
+                    <div className="prog-bar"><div className="prog-fill" style={{width:`${item.frac*100}%`,background:stockColor(item.frac)}}/></div>
+                    <div className="inv-pct" style={{color:stockColor(item.frac)}}>{Math.round(item.frac*100)}% remaining</div>
+                    <div className="inv-actions">
+                      <button className="btn-xs btn-edit" onClick={()=>onEdit(item)}>✏️ Edit</button>
+                      <button className="btn-xs btn-del" onClick={()=>onDelete(item.id)}>🗑️</button>
+                    </div>
+                  </div>
+                );
+              })}
+              <div className="add-item-card" onClick={onAdd}>＋<br/>Add item</div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// ADD / EDIT ITEM MODAL
+// ─────────────────────────────────────────────
+function AddItemModal({existing,onSave,onClose}){
+  const [form,setForm]=useState(existing||{name:'',location:'fridge',frac:1.0,container:'bag'});
+  const set=(k,v)=>setForm(f=>({...f,[k]:v}));
+  function submit(e){
+    e.preventDefault();
+    if(!form.name) return;
+    onSave({...form});
+  }
+  return(
+    <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal">
+        <button className="modal-close" onClick={onClose}>✕</button>
+        <h2 style={{marginBottom:'20px'}}>{existing?'✏️ Edit Item':'➕ Add Item'}</h2>
+        <form onSubmit={submit}>
+          <div className="form-group">
+            <label className="form-label">Item Name</label>
+            <input className="form-input" value={form.name} onChange={e=>set('name',e.target.value)} placeholder="e.g. Pasta, Eggs, Olive Oil..." required autoFocus />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Container Type</label>
+            <div className="container-row">
+              {CONTAINERS.map(c=><div key={c} className={`cont-btn ${form.container===c?'sel':''}`} onClick={()=>set('container',c)}>{c}</div>)}
+            </div>
+          </div>
+          <div className="form-group">
+            <label className="form-label">How much is left?</label>
+            <div className="fraction-row">
+              {FRACTIONS.map(f=><div key={f.val} className={`frac-btn ${form.frac===f.val?'sel':''}`} onClick={()=>set('frac',f.val)}>
+                {f.val===1.0?'🆕 Full':f.val===0.75?'¾ left':f.val===0.5?'½ left':'¼ left'}
+              </div>)}
+            </div>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Location</label>
+            <select className="form-select" value={form.location} onChange={e=>set('location',e.target.value)}>
+              <option value="fridge">🧊 Fridge</option>
+              <option value="freezer">❄️ Freezer</option>
+              <option value="pantry">🥫 Pantry</option>
+            </select>
+          </div>
+          <div style={{display:'flex',gap:'10px',marginTop:'8px'}}>
+            <button type="submit" className="btn btn-primary" style={{flex:1}}>💾 Save</button>
+            <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// SCAN MODAL (AI image analysis)
+// ─────────────────────────────────────────────
+function ScanModal({apiKey,onSave,onClose}){
+  const [phase,setPhase]       = useState('upload'); // upload | analyzing | review
+  const [imageUrl,setImageUrl] = useState(null);
+  const [imageBase64,setImageBase64] = useState(null);
+  const [imageMime,setImageMime]     = useState(null);
+  const [detectedItems,setDetectedItems] = useState([]);
+  const [error,setError]       = useState(null);
+  const [dragging,setDragging] = useState(false);
+  const fileRef=useRef(null);
+
+  async function handleFile(file){
+    if(!file||!file.type.startsWith('image/')) return;
+    setImageUrl(URL.createObjectURL(file));
+    setImageMime(file.type);
+    const b64=await fileToBase64(file);
+    setImageBase64(b64);
+    if(apiKey){
+      setPhase('analyzing');
+      setError(null);
+      try{
+        const items=await analyzeImageWithClaude(b64,file.type,apiKey);
+        setDetectedItems(items.map((it,i)=>({...it,id:i,frac:1.0,location:'pantry',include:true})));
+        setPhase('review');
+      }catch(e){
+        setError(e.message);
+        setPhase('review');
+        setDetectedItems([{id:0,name:'',container:'bag',frac:1.0,location:'pantry',include:true}]);
+      }
+    } else {
+      setPhase('review');
+      setDetectedItems([{id:0,name:'',container:'bag',frac:1.0,location:'pantry',include:true}]);
+    }
+  }
+
+  function drop(e){ e.preventDefault(); setDragging(false); handleFile(e.dataTransfer.files[0]); }
+  function updateItem(id,key,val){ setDetectedItems(prev=>prev.map(i=>i.id===id?{...i,[key]:val}:i)); }
+  function removeItem(id){ setDetectedItems(prev=>prev.filter(i=>i.id!==id)); }
+  function addItem(){ setDetectedItems(prev=>[...prev,{id:Date.now(),name:'',container:'bag',frac:1.0,location:'pantry',include:true}]); }
+  function confirmSave(){
+    const toSave=detectedItems.filter(i=>i.include&&i.name.trim());
+    if(toSave.length===0) return;
+    onSave(toSave.map(i=>({name:i.name.trim(),container:i.container,frac:i.frac,location:i.location})));
+    onClose();
+  }
+
+  return(
+    <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal wide">
+        <button className="modal-close" onClick={onClose}>✕</button>
+        <h2 style={{marginBottom:'6px'}}>📸 Scan Inventory Items</h2>
+        <p style={{fontSize:'13px',color:'#888',marginBottom:'18px'}}>
+          Take a photo of one item or an entire shelf — I'll identify everything and ask how much is left.
+        </p>
+
+        {!apiKey&&(
+          <div className="api-key-note">
+            💡 <strong>Tip:</strong> Add your Claude API key in ⚙️ Settings for automatic AI item detection.
+            Without it, you'll enter items manually after uploading the photo.
+          </div>
+        )}
+
+        {phase==='upload'&&(
+          <>
+            <div className={`scan-drop ${dragging?'drag':''}`}
+              onClick={()=>fileRef.current.click()}
+              onDragOver={e=>{e.preventDefault();setDragging(true);}}
+              onDragLeave={()=>setDragging(false)}
+              onDrop={drop}>
+              <div className="scan-drop-icon">📷</div>
+              <div className="scan-drop-text">Tap to take a photo or upload</div>
+              <div className="scan-drop-sub">Works with a single item or a full pantry shelf</div>
+            </div>
+            <input ref={fileRef} type="file" accept="image/*" capture="environment" style={{display:'none'}} onChange={e=>handleFile(e.target.files[0])} />
+          </>
+        )}
+
+        {phase==='analyzing'&&(
+          <div>
+            <img src={imageUrl} className="scan-preview" alt="uploaded"/>
+            <div className="loading-pulse"><div className="spinner"/>Identifying food items in your photo...</div>
+          </div>
+        )}
+
+        {phase==='review'&&(
+          <div>
+            {imageUrl&&<img src={imageUrl} className="scan-preview" alt="uploaded"/>}
+            {error&&<div className="missing-note">⚠️ {error} — please enter items manually below.</div>}
+            {detectedItems.length>0&&!error&&apiKey&&(
+              <div style={{fontWeight:700,fontSize:'13px',color:'#2d8a4e',marginBottom:'10px'}}>
+                ✅ Found {detectedItems.length} item{detectedItems.length>1?'s':''}! Confirm how much is left in each:
+              </div>
+            )}
+            {(!apiKey||detectedItems.length===0||error)&&(
+              <div style={{fontWeight:700,fontSize:'13px',color:'#555',marginBottom:'10px'}}>
+                Enter items you see in the photo:
+              </div>
+            )}
+
+            {detectedItems.map(item=>(
+              <div key={item.id} style={{background:'#f8f8f8',borderRadius:'12px',padding:'14px',marginBottom:'12px'}}>
+                <div style={{display:'flex',alignItems:'center',gap:'10px',marginBottom:'10px'}}>
+                  <input
+                    className="form-input"
+                    value={item.name}
+                    onChange={e=>updateItem(item.id,'name',e.target.value)}
+                    placeholder="Item name..."
+                    style={{flex:1,margin:0}}
+                  />
+                  <select className="form-select" value={item.container} onChange={e=>updateItem(item.id,'container',e.target.value)} style={{width:'120px'}}>
+                    {CONTAINERS.map(c=><option key={c} value={c}>{c}</option>)}
+                  </select>
+                  <button className="scan-remove" onClick={()=>removeItem(item.id)} title="Remove">✕</button>
+                </div>
+                <div style={{display:'flex',gap:'16px',alignItems:'center',flexWrap:'wrap'}}>
+                  <div>
+                    <div className="form-label" style={{marginBottom:'6px'}}>How much is left?</div>
+                    <div className="fraction-row">
+                      {FRACTIONS.map(f=><div key={f.val} className={`frac-btn ${item.frac===f.val?'sel':''}`} onClick={()=>updateItem(item.id,'frac',f.val)}>
+                        {f.val===1.0?'🆕 Full':f.val===0.75?'¾ left':f.val===0.5?'½ left':'¼ left'}
+                      </div>)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="form-label" style={{marginBottom:'6px'}}>Location</div>
+                    <select className="form-select" value={item.location} onChange={e=>updateItem(item.id,'location',e.target.value)} style={{width:'140px'}}>
+                      <option value="fridge">🧊 Fridge</option>
+                      <option value="freezer">❄️ Freezer</option>
+                      <option value="pantry">🥫 Pantry</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            <button className="btn btn-secondary" style={{marginBottom:'12px'}} onClick={addItem}>＋ Add another item</button>
+            <br/>
+
+            {phase!=='upload'&&(
+              <button className="btn btn-secondary" style={{marginBottom:'12px',marginRight:'8px'}} onClick={()=>{setPhase('upload');setImageUrl(null);setDetectedItems([]);}}>
+                📷 Scan different photo
+              </button>
+            )}
+
+            <button
+              className="btn btn-primary btn-full"
+              onClick={confirmSave}
+              disabled={detectedItems.filter(i=>i.name.trim()).length===0}
+            >
+              ✅ Add {detectedItems.filter(i=>i.name.trim()).length} item{detectedItems.filter(i=>i.name.trim()).length!==1?'s':''} to Inventory
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Cuisine options for the mood picker
+const CUISINE_MOODS = [
+  {id:'American',    emoji:'🇺🇸', label:'American'},
+  {id:'Italian',     emoji:'🇮🇹', label:'Italian'},
+  {id:'Mexican',     emoji:'🇲🇽', label:'Mexican'},
+  {id:'Asian',       emoji:'🇯🇵', label:'Asian'},
+  {id:'Mediterranean',emoji:'🇬🇷',label:'Greek / Med'},
+  {id:'Indian',      emoji:'🇮🇳', label:'Indian'},
+  {id:'any',         emoji:'🌍',  label:'Surprise Me!'},
+];
+
+// ─────────────────────────────────────────────
+// RECIPE TAB  — 4-step flow
+//   Step 1: How much time?
+//   Step 2: Pick ingredients from your inventory
+//   Step 3: What cuisine are you in the mood for?
+//   Step 4: See your 3 recommendations
+// ─────────────────────────────────────────────
+function RecipeTab({inventory,prefs,onSelect}){
+  const [step,setStep]               = useState(1);
+  const [timeLimit,setTimeLimit]     = useState(null);
+  const [selectedIds,setSelectedIds] = useState([]);
+  const [cuisineMood,setCuisineMood] = useState(null);
+
+  const availableItems = useMemo(()=>inventory.filter(i=>i.frac>0),[inventory]);
+
+  function toggleItem(id){
+    setSelectedIds(prev=>prev.includes(id)?prev.filter(x=>x!==id):[...prev,id]);
+  }
+
+  // Top-3 recipes: filter by time + cuisine mood, rank by ingredient overlap
+  const top3 = useMemo(()=>{
+    if(step!==4) return [];
+    const selected = availableItems.filter(i=>selectedIds.includes(i.id));
+    return RECIPES
+      .filter(r=>{
+        if(r.minutes>timeLimit) return false;
+        if(cuisineMood && cuisineMood!=='any' && r.cuisine!==cuisineMood) return false;
+        return true;
+      })
+      .map(r=>{
+        let hits=0;
+        r.ingredients.forEach(ing=>{
+          if(selected.some(item=>nameMatch(item.name,ing.name))) hits++;
+        });
+        return {...r, hits, match:matchRecipe(r,inventory)};
+      })
+      .filter(r=>r.hits>0)
+      .sort((a,b)=>b.hits-a.hits||b.match.pct-a.match.pct)
+      .slice(0,3);
+  },[step,selectedIds,cuisineMood,timeLimit,inventory,availableItems]);
+
+  // ── Step 1: Time ──────────────────────────
+  if(step===1){
+    return(
+      <div className="filter-section">
+        <div style={{textAlign:'center',padding:'16px 0 8px'}}>
+          <div style={{fontSize:'40px',marginBottom:'12px'}}>⏱️</div>
+          <div style={{fontSize:'20px',fontWeight:800,color:'#1a5c34',marginBottom:'6px'}}>How much time do you have?</div>
+          <div style={{fontSize:'14px',color:'#888',marginBottom:'24px'}}>I'll only recommend recipes you can actually finish.</div>
+          <div className="time-grid">
+            {TIMES.map(t=>(
+              <div key={t.val} className="time-card" onClick={()=>{setTimeLimit(t.val);setStep(2);}}>
+                <div className="time-card-icon">{t.icon}</div>
+                <div className="time-card-label">{t.label}</div>
+                <div className="time-card-sub">{t.sub}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Step 2: Pick ingredients ───────────────
+  if(step===2){
+    const byLoc = [['fridge','🧊 Fridge'],['freezer','❄️ Freezer'],['pantry','🥫 Pantry']];
+    return(
+      <div>
+        <div className="filter-section" style={{marginBottom:'16px'}}>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'6px'}}>
+            <div style={{fontWeight:800,fontSize:'16px',color:'#1a5c34'}}>🛒 What do you want to cook with?</div>
+            <button className="btn btn-secondary" style={{padding:'6px 12px',fontSize:'12px'}} onClick={()=>{setStep(1);setSelectedIds([]);}}>← Change Time</button>
+          </div>
+          <div style={{fontSize:'13px',color:'#888',marginBottom:'16px'}}>
+            Tap the ingredients you'd like to use. I'll find the 3 best recipes for them — I don't need to use all of them.
+          </div>
+
+          {byLoc.map(([loc,label])=>{
+            const items=availableItems.filter(i=>i.location===loc);
+            if(items.length===0) return null;
+            return(
+              <div key={loc} style={{marginBottom:'14px'}}>
+                <div style={{fontSize:'12px',fontWeight:700,color:'#777',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:'8px'}}>{label}</div>
+                <div style={{display:'flex',flexWrap:'wrap',gap:'8px'}}>
+                  {items.map(item=>{
+                    const sel=selectedIds.includes(item.id);
+                    return(
+                      <div key={item.id}
+                        onClick={()=>toggleItem(item.id)}
+                        style={{
+                          padding:'8px 14px',borderRadius:'20px',cursor:'pointer',fontSize:'13px',fontWeight:600,
+                          border:`2px solid ${sel?'#2d8a4e':'#e0e0e0'}`,
+                          background:sel?'#e8f0e9':'white',
+                          color:sel?'#1a5c34':'#555',
+                          transition:'all 0.15s',
+                          display:'flex',alignItems:'center',gap:'6px'
+                        }}>
+                        {sel&&<span style={{fontSize:'11px'}}>✓</span>}
+                        {item.name}
+                        <span style={{fontSize:'11px',opacity:0.7}}>{item.frac===1?'full':`${Math.round(item.frac*100)}%`}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+
+          <div style={{borderTop:'1px solid #f0f0f0',paddingTop:'14px',marginTop:'6px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+            <div style={{fontSize:'13px',color:'#888'}}>
+              {selectedIds.length===0?'No ingredients selected yet':''}
+              {selectedIds.length>0&&<span style={{color:'#2d8a4e',fontWeight:700}}>{selectedIds.length} ingredient{selectedIds.length>1?'s':''} selected</span>}
+            </div>
+            <button
+              className="btn btn-primary"
+              disabled={selectedIds.length===0}
+              onClick={()=>setStep(3)}
+              style={{padding:'10px 22px'}}
+            >
+              Next →
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Step 3: Cuisine mood ───────────────────
+  if(step===3){
+    return(
+      <div>
+        <div className="filter-section">
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'6px'}}>
+            <div style={{fontWeight:800,fontSize:'16px',color:'#1a5c34'}}>🌍 What are you in the mood for?</div>
+            <button className="btn btn-secondary" style={{padding:'6px 12px',fontSize:'12px'}} onClick={()=>setStep(2)}>← Back</button>
+          </div>
+          <div style={{fontSize:'13px',color:'#888',marginBottom:'20px'}}>Pick a cuisine — or let me surprise you.</div>
+
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(130px,1fr))',gap:'10px'}}>
+            {CUISINE_MOODS.map(c=>(
+              <div key={c.id}
+                onClick={()=>{setCuisineMood(c.id);setStep(4);}}
+                style={{
+                  background:'white',border:'2px solid #e8e8e8',borderRadius:'14px',
+                  padding:'16px 10px',textAlign:'center',cursor:'pointer',
+                  transition:'all 0.18s',
+                }}
+                onMouseEnter={e=>{e.currentTarget.style.borderColor='#2d8a4e';e.currentTarget.style.background='#f5fbf6';}}
+                onMouseLeave={e=>{e.currentTarget.style.borderColor='#e8e8e8';e.currentTarget.style.background='white';}}>
+                <div style={{fontSize:'32px',marginBottom:'8px'}}>{c.emoji}</div>
+                <div style={{fontWeight:700,fontSize:'14px',color:'#333'}}>{c.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Step 4: 3 recommendations ─────────────
+  const selectedNames = availableItems.filter(i=>selectedIds.includes(i.id)).map(i=>i.name);
+  const cuisineLabel  = CUISINE_MOODS.find(c=>c.id===cuisineMood);
+  return(
+    <div>
+      {/* Header bar */}
+      <div className="filter-section" style={{marginBottom:'16px',padding:'14px 18px'}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:'8px'}}>
+          <div>
+            <div style={{fontWeight:800,fontSize:'15px',color:'#1a5c34',marginBottom:'3px'}}>
+              {cuisineLabel?.emoji} Your 3 {cuisineLabel?.id==='any'?'':cuisineLabel?.label+' '}Picks
+            </div>
+            <div style={{fontSize:'12px',color:'#888'}}>
+              ⏱️ Up to {timeLimit} min · {selectedNames.slice(0,3).join(', ')}{selectedNames.length>3?` +${selectedNames.length-3} more`:''}
+            </div>
+          </div>
+          <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>
+            <button className="btn btn-secondary" style={{padding:'7px 12px',fontSize:'12px'}} onClick={()=>setStep(3)}>← Cuisine</button>
+            <button className="btn btn-secondary" style={{padding:'7px 12px',fontSize:'12px'}} onClick={()=>{setStep(1);setSelectedIds([]);setTimeLimit(null);setCuisineMood(null);}}>Start Over</button>
+          </div>
+        </div>
+      </div>
+
+      {top3.length===0?(
+        <div className="empty">
+          <div className="empty-icon">🤔</div>
+          <div className="empty-text">
+            No {cuisineLabel?.id!=='any'?cuisineLabel?.label+' ':''}recipes matched those ingredients in {timeLimit} min.
+          </div>
+          <div style={{display:'flex',gap:'10px',justifyContent:'center',marginTop:'16px',flexWrap:'wrap'}}>
+            <button className="btn btn-primary" onClick={()=>setStep(3)}>Try a Different Cuisine</button>
+            <button className="btn btn-secondary" onClick={()=>setStep(2)}>Change Ingredients</button>
+          </div>
+        </div>
+      ):(
+        <div style={{display:'flex',flexDirection:'column',gap:'16px'}}>
+          {top3.map((r,idx)=>(
+            <RecipeCard key={r.id} recipe={r} rank={idx+1} selectedNames={selectedNames} onClick={()=>onSelect(r)} />
+          ))}
+          {top3.length<3&&(
+            <div style={{textAlign:'center',fontSize:'13px',color:'#aaa',padding:'8px'}}>
+              Only {top3.length} recipe{top3.length>1?'s':''} matched — try a different cuisine or more ingredients.
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RecipeCard({recipe,rank,selectedNames,onClick}){
+  const {match}=recipe;
+  const hits=recipe.hits||0;
+  const canMake=match.pct===1;
+  const rankColors=['#f4a226','#2d8a4e','#8e44ad'];
+  const rankLabels=['#1 Pick','#2 Pick','#3 Pick'];
+
+  // Which selected ingredients does this recipe use?
+  const usedIngredients = recipe.ingredients
+    .filter(ing=>selectedNames&&selectedNames.some(n=>nameMatch(n,ing.name)))
+    .map(ing=>ing.name);
+
+  return(
+    <div style={{background:'white',borderRadius:'14px',padding:'18px',cursor:'pointer',border:`2px solid ${rankColors[(rank||1)-1]}`,boxShadow:'0 2px 10px rgba(0,0,0,0.08)',transition:'all 0.2s'}}
+      onClick={onClick}
+      onMouseEnter={e=>e.currentTarget.style.transform='translateY(-2px)'}
+      onMouseLeave={e=>e.currentTarget.style.transform='translateY(0)'}>
+      <div style={{display:'flex',alignItems:'flex-start',gap:'14px'}}>
+        {/* Rank badge + emoji */}
+        <div style={{textAlign:'center',flexShrink:0}}>
+          <div style={{background:rankColors[(rank||1)-1],color:'white',borderRadius:'8px',padding:'3px 8px',fontSize:'11px',fontWeight:800,marginBottom:'6px'}}>{rankLabels[(rank||1)-1]}</div>
+          <div style={{fontSize:'44px',lineHeight:1}}>{recipe.emoji}</div>
+        </div>
+
+        {/* Info */}
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontWeight:800,fontSize:'16px',marginBottom:'8px'}}>{recipe.name}</div>
+          <div style={{display:'flex',gap:'6px',flexWrap:'wrap',marginBottom:'10px'}}>
+            <span className="tag tag-b">{recipe.cuisine}</span>
+            <span className="tag tag-g">⏱️ {recipe.minutes} min</span>
+            {recipe.flavor.slice(0,2).map(f=><span key={f} className={`tag ${f==='spicy'?'tag-r':f==='sweet'?'tag-p':f==='umami'?'tag-t':'tag-o'}`}>{f}</span>)}
+          </div>
+
+          {/* Ingredient overlap */}
+          <div style={{fontSize:'12px',marginBottom:'6px'}}>
+            <span style={{fontWeight:700,color:'#2d8a4e'}}>Uses {hits} of your selected ingredient{hits!==1?'s':''}: </span>
+            <span style={{color:'#555'}}>{usedIngredients.slice(0,4).join(', ')}{usedIngredients.length>4?` +${usedIngredients.length-4} more`:''}</span>
+          </div>
+
+          {/* Full inventory match */}
+          <div style={{fontSize:'12px',color:'#999',display:'flex',alignItems:'center',gap:'5px'}}>
+            <span style={{width:7,height:7,borderRadius:'50%',background:canMake?'#2d8a4e':'#f4a226',display:'inline-block',flexShrink:0}}/>
+            {canMake?'✅ You have all ingredients!':match.missing.length>0?`May need: ${match.missing.slice(0,3).join(', ')}`:``}
+          </div>
+        </div>
+
+        {/* Arrow */}
+        <div style={{fontSize:'20px',color:'#ccc',flexShrink:0,alignSelf:'center'}}>›</div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// RECIPE DETAIL MODAL
+// ─────────────────────────────────────────────
+function RecipeDetailModal({recipe,inventory,onCook,onClose}){
+  const match=matchRecipe(recipe,inventory);
+  return(
+    <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal">
+        <button className="modal-close" onClick={onClose}>✕</button>
+        <div className="rd-header">
+          <div className="rd-emoji">{recipe.emoji}</div>
+          <div className="rd-info">
+            <h2>{recipe.name}</h2>
+            <div className="rd-tags">
+              <span className="tag tag-b">{recipe.cuisine}</span>
+              <span className="tag tag-g">⏱️ {recipe.minutes} min</span>
+              <span className="tag tag-o">👨‍🍳 Beginner</span>
+              {recipe.flavor.map(f=><span key={f} className={`tag ${f==='spicy'?'tag-r':f==='sweet'?'tag-p':f==='umami'?'tag-t':'tag-g'}`}>{f}</span>)}
+            </div>
+          </div>
+        </div>
+        <div className="rd-section">
+          <div className="rd-section-title">🛒 Ingredients</div>
+          <ul className="ing-list">
+            {recipe.ingredients.map((ing,i)=>{
+              const inInv=inventory.some(item=>nameMatch(item.name,ing.name)&&item.frac>0);
+              return(
+                <li key={i} className="ing-item">
+                  <span className={`ing-dot ${inInv?'have':'unknown'}`}/>
+                  <span><strong>{ing.qty}</strong> {ing.name}</span>
+                  {inInv&&<span style={{marginLeft:'auto',fontSize:'11px',color:'#2d8a4e',fontWeight:700}}>✓ have it</span>}
+                </li>
+              );
+            })}
+          </ul>
+          {match.missing.length>0&&<div className="missing-note">⚠️ May be short on: {match.missing.join(', ')}. Check your pantry — you might have more than tracked!</div>}
+        </div>
+        <div className="rd-section">
+          <div className="rd-section-title">👨‍🍳 Step-by-Step Instructions</div>
+          <ol className="step-list">
+            {recipe.instructions.map((step,i)=>(
+              <li key={i} className="step-item">
+                <span className="step-num">{i+1}</span>
+                <span className="step-text">{step}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+        <button className="btn btn-primary btn-full" onClick={()=>onCook(recipe)}>
+          🍽️ I Cooked This! — Deduct from Inventory
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// HISTORY TAB
+// ─────────────────────────────────────────────
+function HistoryTab({history}){
+  if(history.length===0) return <div className="empty"><div className="empty-icon">📖</div><div className="empty-text">No history yet. Make your first recipe!</div></div>;
+  const byMonth={};
+  history.forEach(h=>{ if(!byMonth[h.month]) byMonth[h.month]=[]; byMonth[h.month].push(h); });
+  return(
+    <div>
+      {Object.entries(byMonth).sort(([a],[b])=>b.localeCompare(a)).map(([month,entries])=>(
+        <div key={month} style={{background:'white',borderRadius:'12px',marginBottom:'16px',overflow:'hidden',boxShadow:'0 2px 8px rgba(0,0,0,0.07)'}}>
+          <div style={{background:'#f2f8f3',padding:'12px 20px',borderBottom:'1px solid #e8ede9',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+            <div style={{fontWeight:800,fontSize:'15px',color:'#1a5c34'}}>{formatMonth(month)}</div>
+            <span className="badge badge-green">🍽️ {entries.length} meal{entries.length>1?'s':''}</span>
+          </div>
+          {entries.map(h=>(
+            <div key={h.id} className="history-item">
+              <div className="hi-emoji">{h.emoji}</div>
+              <div className="hi-info">
+                <div className="hi-name">{h.name}</div>
+                <div className="hi-date">{formatDate(h.date)}</div>
+                {h.challenge&&<div className="hi-month">⭐ Monthly Challenge Pick</div>}
+              </div>
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// ALERTS MODAL
+// ─────────────────────────────────────────────
+function AlertsModal({items,onClose}){
+  return(
+    <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal">
+        <button className="modal-close" onClick={onClose}>✕</button>
+        <h2>🔔 Stock Alerts</h2>
+        {items.length===0?(
+          <div className="empty" style={{padding:'24px 0'}}><div className="empty-icon">✅</div><div className="empty-text">Everything is well stocked!</div></div>
+        ):(
+          <div>
+            <p style={{fontSize:'14px',color:'#666',marginBottom:'16px'}}>These items are at 25% or less — consider restocking soon.</p>
+            {items.map(item=>(
+              <div key={item.id} style={{display:'flex',alignItems:'center',gap:'14px',padding:'14px',borderBottom:'1px solid #f5f5f5'}}>
+                <div style={{fontSize:'24px'}}>{item.frac<=0.10?'🚨':'⚠️'}</div>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:700,fontSize:'15px'}}>{item.name}</div>
+                  <div style={{fontSize:'12px',color:'#888'}}>{fracLabel(item.frac)} {item.container} left · {item.location}</div>
+                  <div className="prog-bar" style={{marginTop:'6px'}}><div className="prog-fill" style={{width:`${item.frac*100}%`,background:stockColor(item.frac)}}/></div>
+                </div>
+                <div style={{fontWeight:800,color:stockColor(item.frac),fontSize:'15px'}}>{Math.round(item.frac*100)}%</div>
+              </div>
+            ))}
+          </div>
+        )}
+        <button className="btn btn-secondary" style={{width:'100%',marginTop:'16px'}} onClick={onClose}>Close</button>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// MONTHLY CHALLENGE MODAL
+// ─────────────────────────────────────────────
+function MonthlyChallengeModal({inventory,history,onCook,onClose}){
+  const [selected,setSelected]=useState(null);
+  const month=getCurrentMonth();
+  const done=history.some(h=>h.month===month&&h.challenge);
+  if(done){
+    const pick=history.find(h=>h.month===month&&h.challenge);
+    return(
+      <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+        <div className="modal">
+          <button className="modal-close" onClick={onClose}>✕</button>
+          <div className="challenge-header"><h3>⭐ Monthly Challenge</h3><p>{formatMonth(month)}</p></div>
+          <div style={{textAlign:'center',padding:'20px'}}><div style={{fontSize:'60px',marginBottom:'12px'}}>{pick.emoji}</div><div style={{fontWeight:800,fontSize:'17px',marginBottom:'6px'}}>Challenge complete!</div><div style={{fontSize:'14px',color:'#666'}}>{pick.name}</div><div style={{fontSize:'12px',color:'#999',marginTop:'6px'}}>{formatDate(pick.date)}</div></div>
+          <button className="btn btn-secondary btn-full" onClick={onClose}>Close</button>
+        </div>
+      </div>
+    );
+  }
+  const candidates=RECIPES.map(r=>({...r,match:matchRecipe(r,inventory)})).sort((a,b)=>b.match.pct-a.match.pct);
+  const picks=[];const used=new Set();
+  for(const r of candidates){ if(picks.length>=3) break; if(!used.has(r.cuisine)){picks.push(r);used.add(r.cuisine);} }
+  while(picks.length<3&&picks.length<candidates.length){const r=candidates[picks.length];if(!picks.find(p=>p.id===r.id))picks.push(r);}
+  return(
+    <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal">
+        <button className="modal-close" onClick={onClose}>✕</button>
+        <div className="challenge-header"><h3>⭐ Monthly Challenge</h3><p>{formatMonth(month)} — Pick one recipe to cook this month!</p></div>
+        {picks.map(r=>(
+          <div key={r.id} className={`challenge-option ${selected===r.id?'selected':''}`} onClick={()=>setSelected(r.id)}>
+            <div className="co-emoji">{r.emoji}</div>
+            <div className="co-info"><div className="co-name">{r.name}</div><div className="co-meta">{r.cuisine} · ⏱️ {r.minutes} min · {r.match.pct===1?'✅ Have everything':r.match.missing.length>0?`⚠️ Missing: ${r.match.missing.slice(0,2).join(', ')}`:''}</div></div>
+            {selected===r.id&&<span style={{fontSize:'22px'}}>✅</span>}
+          </div>
+        ))}
+        <button className={`btn ${selected?'btn-orange':'btn-secondary'} btn-full`} disabled={!selected} onClick={()=>{ const r=picks.find(x=>x.id===selected); if(r) onCook(r); }}>
+          {selected?`🍽️ Cook "${picks.find(r=>r.id===selected)?.name}"!`:'Select a recipe first'}
+        </button>
+        <button className="btn btn-secondary" style={{width:'100%',marginTop:'8px'}} onClick={onClose}>Skip for now</button>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// SETTINGS MODAL
+// ─────────────────────────────────────────────
+function SettingsModal({prefs,apiKey,onSave,onClose}){
+  const [data,setData]=useState({...prefs});
+  const [key,setKey]=useState(apiKey);
+  const [showKey,setShowKey]=useState(false);
+  const cuisineOpts=['🇺🇸 American','🇮🇹 Italian','🇲🇽 Mexican','🇯🇵 Asian','🇬🇷 Mediterranean','🌍 All cuisines'];
+  function toggle(field,val){ setData(d=>{const a=d[field];return{...d,[field]:a.includes(val)?a.filter(x=>x!==val):[...a,val]};}); }
+  return(
+    <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal">
+        <button className="modal-close" onClick={onClose}>✕</button>
+        <h2 style={{marginBottom:'20px'}}>⚙️ Settings</h2>
+
+        <div className="form-group">
+          <label className="form-label">🤖 Claude API Key <span style={{fontWeight:400,color:'#999'}}>(for photo scanning)</span></label>
+          <div style={{display:'flex',gap:'8px'}}>
+            <input className="form-input" type={showKey?'text':'password'} value={key} onChange={e=>setKey(e.target.value)} placeholder="sk-ant-..." style={{flex:1}} />
+            <button className="btn btn-secondary" style={{padding:'10px 14px',flexShrink:0}} onClick={()=>setShowKey(s=>!s)}>{showKey?'Hide':'Show'}</button>
+          </div>
+          <div className="form-hint">Get your key at <strong>console.anthropic.com</strong> — stored locally on your device only. Enables AI photo scanning in inventory.</div>
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">Household Size</label>
+          <div className="scale-row">{[1,2,3,4,'5+'].map(n=><div key={n} className={`scale-btn ${data.householdSize===n?'sel':''}`} onClick={()=>setData(d=>({...d,householdSize:n}))}>{n}</div>)}</div>
+        </div>
+        <div className="form-group">
+          <label className="form-label">Favorite Cuisines</label>
+          <div className="check-grid">{cuisineOpts.map(c=><div key={c} className={`check-item ${data.cuisines.includes(c)?'sel':''}`} onClick={()=>toggle('cuisines',c)}>{data.cuisines.includes(c)?'✅':'⬜'} {c}</div>)}</div>
+        </div>
+        <div className="form-group">
+          <label className="form-label">Spice Level</label>
+          <div className="scale-row">{[['mild','😌 Mild'],['medium','🙂 Medium'],['spicy','🌶️ Spicy'],['very_spicy','🔥 Hot']].map(([v,l])=><div key={v} className={`scale-btn ${data.spiceLevel===v?'sel':''}`} onClick={()=>setData(d=>({...d,spiceLevel:v}))}>{l}</div>)}</div>
+        </div>
+        <div style={{display:'flex',gap:'10px',marginTop:'8px'}}>
+          <button className="btn btn-primary" style={{flex:1}} onClick={()=>onSave(data,key)}>Save Changes</button>
+          <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
