@@ -386,10 +386,14 @@ async function analyzeImageWithClaude(base64,mimeType,apiKey){
 // ─── HOUSEHOLD SETUP ─────────────────────────
 function HouseholdSetup({onSetup}){
   const [name,setName]=useState('');
+  const [pin,setPin]=useState('');
+  const [error,setError]=useState('');
   function handleJoin(){
-    if(!name.trim()) return;
-    const id=name.trim().toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
+    if(!name.trim()){setError('Please enter a household name.');return;}
+    if(pin.length<4){setError('PIN must be at least 4 digits.');return;}
+    const id=name.trim().toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'')+'-'+pin.trim();
     localStorage.setItem('kc_household',id);
+    localStorage.setItem('kc_household_display',name.trim());
     onSetup(id);
   }
   return(
@@ -398,17 +402,21 @@ function HouseholdSetup({onSetup}){
         <div style={{fontSize:'48px',marginBottom:'12px'}}>🏠</div>
         <div style={{fontSize:'24px',fontWeight:800,color:'#1a5c34',marginBottom:'8px'}}>Welcome to Kitchen Companion!</div>
         <div style={{fontSize:'14px',color:'#666',marginBottom:'24px',lineHeight:1.7}}>
-          Enter your household name to get started.<br/>
-          <strong>Your spouse must enter the exact same name</strong> to share your inventory in real-time.
+          Create your household name and a private PIN. <strong>Both must match exactly</strong> on every device that wants to share the same inventory.
         </div>
         <div className="form-group">
           <label className="form-label">Household Name</label>
-          <input className="form-input" style={{fontSize:'16px',padding:'12px 14px'}} value={name} onChange={e=>setName(e.target.value)} placeholder="e.g. Kang Family" onKeyDown={e=>e.key==='Enter'&&handleJoin()} autoFocus />
-          <div className="form-hint">Case-sensitive — spouse must enter it exactly the same way</div>
+          <input className="form-input" style={{fontSize:'16px',padding:'12px 14px'}} value={name} onChange={e=>{setName(e.target.value);setError('');}} placeholder="e.g. Kang Family" autoFocus/>
         </div>
-        <button className="btn btn-primary btn-full" disabled={!name.trim()} onClick={handleJoin}>Let's Get Cooking! 🍳</button>
+        <div className="form-group">
+          <label className="form-label">PIN <span style={{fontWeight:400,color:'#999'}}>(4–8 digits — makes your household unique)</span></label>
+          <input className="form-input" style={{fontSize:'20px',padding:'12px 14px',letterSpacing:'6px'}} type="password" inputMode="numeric" maxLength={8} value={pin} onChange={e=>{setPin(e.target.value.replace(/\D/g,''));setError('');}} placeholder="····" onKeyDown={e=>e.key==='Enter'&&handleJoin()}/>
+          <div className="form-hint">Share this PIN only with your household. Don't forget it — you'll need it to sign back in on a new device.</div>
+        </div>
+        {error&&<div style={{background:'#fff0f0',color:'#e74c3c',borderRadius:'8px',padding:'10px 14px',fontSize:'13px',fontWeight:600,marginBottom:'12px'}}>⚠️ {error}</div>}
+        <button className="btn btn-primary btn-full" disabled={!name.trim()||pin.length<4} onClick={handleJoin}>Let's Get Cooking! 🍳</button>
         <div style={{textAlign:'center',marginTop:'16px',fontSize:'12px',color:'#aaa'}}>
-          Already have a household? Enter the same name to rejoin.
+          Rejoining? Enter the same household name and PIN you used before.
         </div>
       </div>
     </div>
@@ -515,7 +523,7 @@ function App(){
       <div className="header">
         <div>
           <h1>🍳 Kitchen Companion</h1>
-          <div className="header-sub">🏠 {householdId.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}</div>
+          <div className="header-sub">🏠 {localStorage.getItem('kc_household_display')||householdId.split('-').slice(0,-1).join(' ').replace(/\b\w/g,c=>c.toUpperCase())}</div>
         </div>
         <div className="header-right">
           <button className="icon-btn" onClick={()=>setAlertsModal(true)} title="Stock alerts">
@@ -1072,8 +1080,8 @@ function SettingsModal({prefs,members,apiKey,householdId,appUrl,onSave,onClose,o
 
         {/* Household */}
         <div style={{background:'#e8f0e9',borderRadius:'10px',padding:'12px 14px',marginBottom:'20px'}}>
-          <div style={{fontWeight:700,fontSize:'13px',color:'#1a5c34',marginBottom:'2px'}}>🏠 Household: {householdId.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}</div>
-          <div style={{fontSize:'12px',color:'#555'}}>Share this name with family members so they can join.</div>
+          <div style={{fontWeight:700,fontSize:'13px',color:'#1a5c34',marginBottom:'2px'}}>🏠 Household: {localStorage.getItem('kc_household_display')||householdId.split('-').slice(0,-1).join(' ').replace(/\b\w/g,c=>c.toUpperCase())}</div>
+          <div style={{fontSize:'12px',color:'#555'}}>Share your household name <strong>and PIN</strong> with family members so they can join.</div>
           <button style={{marginTop:'8px',fontSize:'12px',color:'#e74c3c',background:'none',border:'none',cursor:'pointer',padding:0,fontWeight:600}} onClick={onChangeHousehold}>Switch to different household</button>
         </div>
 
