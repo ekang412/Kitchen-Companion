@@ -529,7 +529,8 @@ Return ONLY a valid JSON array, no other text. Example: [{"name":"Pasta","contai
 // MAIN APP
 // ─────────────────────────────────────────────
 function App(){
-  const [prefs,setPrefs]           = useState(()=>JSON.parse(localStorage.getItem('kc_prefs')||'null'));
+  const DEFAULT_PREFS = {householdSize:2,cuisines:['🌍 All cuisines'],dietary:['🥩 No restrictions'],spiceLevel:'medium'};
+  const [prefs,setPrefs]           = useState(()=>JSON.parse(localStorage.getItem('kc_prefs')||'null')||DEFAULT_PREFS);
   const [inventory,setInventory]   = useState(()=>JSON.parse(localStorage.getItem('kc_inv'))||DEFAULT_INVENTORY);
   const [history,setHistory]       = useState(()=>JSON.parse(localStorage.getItem('kc_hist'))||[]);
   const [apiKey,setApiKey]         = useState(()=>localStorage.getItem('kc_apikey')||'');
@@ -602,7 +603,6 @@ function App(){
     if(newLow.length>0) setTimeout(()=>showToast(`⚠️ ${newLow[0].name} is running low!`,'warning'),4000);
   }
 
-  if(!prefs) return <Onboarding onComplete={setPrefs}/>;
 
   return(
     <div>
@@ -957,12 +957,14 @@ const CUISINE_MOODS = [
 // RECIPE TAB  — 4-step flow
 //   Step 1: How much time?
 //   Step 2: Pick ingredients from your inventory
-//   Step 3: What cuisine are you in the mood for?
-//   Step 4: See your 3 recommendations
+//   Step 3: Pick ingredients from your inventory
+//   Step 4: What cuisine are you in the mood for?
+//   Step 5: See your 3 recommendations
 // ─────────────────────────────────────────────
 function RecipeTab({inventory,prefs,onSelect}){
   const [step,setStep]               = useState(1);
   const [timeLimit,setTimeLimit]     = useState(null);
+  const [servings,setServings]       = useState(2);
   const [selectedIds,setSelectedIds] = useState([]);
   const [cuisineMood,setCuisineMood] = useState(null);
 
@@ -974,7 +976,7 @@ function RecipeTab({inventory,prefs,onSelect}){
 
   // Top-3 recipes: filter by time + cuisine mood, rank by ingredient overlap
   const top3 = useMemo(()=>{
-    if(step!==4) return [];
+    if(step!==5) return [];
     const selected = availableItems.filter(i=>selectedIds.includes(i.id));
     return RECIPES
       .filter(r=>{
@@ -1016,15 +1018,47 @@ function RecipeTab({inventory,prefs,onSelect}){
     );
   }
 
-  // ── Step 2: Pick ingredients ───────────────
+  // ── Step 2: How many people? ───────────────
   if(step===2){
+    const options=[
+      {n:1,emoji:'🧍',label:'Just me'},
+      {n:2,emoji:'👫',label:'2 people'},
+      {n:3,emoji:'👨‍👩‍👦',label:'3 people'},
+      {n:4,emoji:'👨‍👩‍👧‍👦',label:'4 people'},
+      {n:5,emoji:'🏠',label:'5 people'},
+      {n:6,emoji:'🎉',label:'6+ people'},
+    ];
+    return(
+      <div className="filter-section">
+        <div style={{textAlign:'center',padding:'16px 0 8px'}}>
+          <div style={{fontSize:'40px',marginBottom:'12px'}}>👨‍🍳</div>
+          <div style={{fontSize:'20px',fontWeight:800,color:'#1a5c34',marginBottom:'6px'}}>How many people are you cooking for?</div>
+          <div style={{fontSize:'14px',color:'#888',marginBottom:'24px'}}>I'll automatically scale all ingredient amounts for you.</div>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'12px',maxWidth:'420px',margin:'0 auto'}}>
+            {options.map(o=>(
+              <div key={o.n} className="time-card"
+                style={servings===o.n?{borderColor:'#2d8a4e',background:'#e8f0e9',borderWidth:'3px'}:{}}
+                onClick={()=>{setServings(o.n);setStep(3);}}>
+                <div className="time-card-icon">{o.emoji}</div>
+                <div className="time-card-label" style={{fontSize:'14px'}}>{o.label}</div>
+              </div>
+            ))}
+          </div>
+          <button className="btn btn-secondary" style={{marginTop:'20px',padding:'8px 16px',fontSize:'13px'}} onClick={()=>setStep(1)}>← Change Time</button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Step 3: Pick ingredients ───────────────
+  if(step===3){
     const byLoc = [['fridge','🧊 Fridge'],['freezer','❄️ Freezer'],['pantry','🥫 Pantry']];
     return(
       <div>
         <div className="filter-section" style={{marginBottom:'16px'}}>
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'6px'}}>
             <div style={{fontWeight:800,fontSize:'16px',color:'#1a5c34'}}>🛒 What do you want to cook with?</div>
-            <button className="btn btn-secondary" style={{padding:'6px 12px',fontSize:'12px'}} onClick={()=>{setStep(1);setSelectedIds([]);}}>← Change Time</button>
+            <button className="btn btn-secondary" style={{padding:'6px 12px',fontSize:'12px'}} onClick={()=>setStep(2)}>← Back</button>
           </div>
           <div style={{fontSize:'13px',color:'#888',marginBottom:'16px'}}>
             Tap the ingredients you'd like to use. I'll find the 3 best recipes for them — I don't need to use all of them.
@@ -1069,7 +1103,7 @@ function RecipeTab({inventory,prefs,onSelect}){
             <button
               className="btn btn-primary"
               disabled={selectedIds.length===0}
-              onClick={()=>setStep(3)}
+              onClick={()=>setStep(4)}
               style={{padding:'10px 22px'}}
             >
               Next →
@@ -1080,21 +1114,21 @@ function RecipeTab({inventory,prefs,onSelect}){
     );
   }
 
-  // ── Step 3: Cuisine mood ───────────────────
-  if(step===3){
+  // ── Step 4: Cuisine mood ───────────────────
+  if(step===4){
     return(
       <div>
         <div className="filter-section">
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'6px'}}>
             <div style={{fontWeight:800,fontSize:'16px',color:'#1a5c34'}}>🌍 What are you in the mood for?</div>
-            <button className="btn btn-secondary" style={{padding:'6px 12px',fontSize:'12px'}} onClick={()=>setStep(2)}>← Back</button>
+            <button className="btn btn-secondary" style={{padding:'6px 12px',fontSize:'12px'}} onClick={()=>setStep(3)}>← Back</button>
           </div>
           <div style={{fontSize:'13px',color:'#888',marginBottom:'20px'}}>Pick a cuisine — or let me surprise you.</div>
 
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(130px,1fr))',gap:'10px'}}>
             {CUISINE_MOODS.map(c=>(
               <div key={c.id}
-                onClick={()=>{setCuisineMood(c.id);setStep(4);}}
+                onClick={()=>{setCuisineMood(c.id);setStep(5);}}
                 style={{
                   background:'white',border:'2px solid #e8e8e8',borderRadius:'14px',
                   padding:'16px 10px',textAlign:'center',cursor:'pointer',
@@ -1112,7 +1146,7 @@ function RecipeTab({inventory,prefs,onSelect}){
     );
   }
 
-  // ── Step 4: 3 recommendations ─────────────
+  // ── Step 5: 3 recommendations ─────────────
   const selectedNames = availableItems.filter(i=>selectedIds.includes(i.id)).map(i=>i.name);
   const cuisineLabel  = CUISINE_MOODS.find(c=>c.id===cuisineMood);
   return(
@@ -1129,8 +1163,8 @@ function RecipeTab({inventory,prefs,onSelect}){
             </div>
           </div>
           <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>
-            <button className="btn btn-secondary" style={{padding:'7px 12px',fontSize:'12px'}} onClick={()=>setStep(3)}>← Cuisine</button>
-            <button className="btn btn-secondary" style={{padding:'7px 12px',fontSize:'12px'}} onClick={()=>{setStep(1);setSelectedIds([]);setTimeLimit(null);setCuisineMood(null);}}>Start Over</button>
+            <button className="btn btn-secondary" style={{padding:'7px 12px',fontSize:'12px'}} onClick={()=>setStep(4)}>← Cuisine</button>
+            <button className="btn btn-secondary" style={{padding:'7px 12px',fontSize:'12px'}} onClick={()=>{setStep(1);setSelectedIds([]);setTimeLimit(null);setCuisineMood(null);setServings(2);}}>Start Over</button>
           </div>
         </div>
       </div>
@@ -1142,14 +1176,14 @@ function RecipeTab({inventory,prefs,onSelect}){
             No {cuisineLabel?.id!=='any'?cuisineLabel?.label+' ':''}recipes matched those ingredients in {timeLimit} min.
           </div>
           <div style={{display:'flex',gap:'10px',justifyContent:'center',marginTop:'16px',flexWrap:'wrap'}}>
-            <button className="btn btn-primary" onClick={()=>setStep(3)}>Try a Different Cuisine</button>
-            <button className="btn btn-secondary" onClick={()=>setStep(2)}>Change Ingredients</button>
+            <button className="btn btn-primary" onClick={()=>setStep(4)}>Try a Different Cuisine</button>
+            <button className="btn btn-secondary" onClick={()=>setStep(3)}>Change Ingredients</button>
           </div>
         </div>
       ):(
         <div style={{display:'flex',flexDirection:'column',gap:'16px'}}>
           {top3.map((r,idx)=>(
-            <RecipeCard key={r.id} recipe={r} rank={idx+1} selectedNames={selectedNames} onClick={()=>onSelect(r)} />
+            <RecipeCard key={r.id} recipe={r} rank={idx+1} selectedNames={selectedNames} servings={servings} onClick={()=>onSelect({...r,servings})} />
           ))}
           {top3.length<3&&(
             <div style={{textAlign:'center',fontSize:'13px',color:'#aaa',padding:'8px'}}>
@@ -1162,7 +1196,7 @@ function RecipeTab({inventory,prefs,onSelect}){
   );
 }
 
-function RecipeCard({recipe,rank,selectedNames,onClick}){
+function RecipeCard({recipe,rank,selectedNames,servings,onClick}){
   const {match}=recipe;
   const hits=recipe.hits||0;
   const canMake=match.pct===1;
@@ -1201,6 +1235,9 @@ function RecipeCard({recipe,rank,selectedNames,onClick}){
             <span style={{color:'#555'}}>{usedIngredients.slice(0,4).join(', ')}{usedIngredients.length>4?` +${usedIngredients.length-4} more`:''}</span>
           </div>
 
+          {servings&&servings!==2&&<div style={{fontSize:'12px',color:'#8e44ad',fontWeight:700,marginBottom:'4px'}}>
+            👥 Scaled for {servings} {servings===1?'person':'people'} · {servings>2?`×${(servings/2).toFixed(1).replace('.0','')} all amounts`:'use half all amounts'}
+          </div>}
           {/* Full inventory match */}
           <div style={{fontSize:'12px',color:'#999',display:'flex',alignItems:'center',gap:'5px'}}>
             <span style={{width:7,height:7,borderRadius:'50%',background:canMake?'#2d8a4e':'#f4a226',display:'inline-block',flexShrink:0}}/>
@@ -1220,6 +1257,9 @@ function RecipeCard({recipe,rank,selectedNames,onClick}){
 // ─────────────────────────────────────────────
 function RecipeDetailModal({recipe,inventory,onCook,onClose}){
   const match=matchRecipe(recipe,inventory);
+  const servings=recipe.servings||2;
+  const scale=servings/2;
+  const scaleNote=scale===1?null:scale>1?`×${scale.toFixed(1).replace('.0','')} all ingredient amounts — scaled for ${servings} people`:`Use half of all ingredient amounts — scaled for 1 person`;
   return(
     <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
       <div className="modal">
@@ -1236,8 +1276,9 @@ function RecipeDetailModal({recipe,inventory,onCook,onClose}){
             </div>
           </div>
         </div>
+        {scaleNote&&<div style={{background:'#f3e8ff',borderRadius:'10px',padding:'11px 14px',fontSize:'13px',color:'#6d28d9',fontWeight:700,marginBottom:'16px'}}>👥 {scaleNote}</div>}
         <div className="rd-section">
-          <div className="rd-section-title">🛒 Ingredients</div>
+          <div className="rd-section-title">🛒 Ingredients <span style={{fontWeight:400,color:'#999',fontSize:'11px',textTransform:'none',letterSpacing:0}}>base recipe serves 2{servings!==2?` · scaled for ${servings}`:''}</span></div>
           <ul className="ing-list">
             {recipe.ingredients.map((ing,i)=>{
               const inInv=inventory.some(item=>nameMatch(item.name,ing.name)&&item.frac>0);
