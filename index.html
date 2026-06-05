@@ -539,7 +539,6 @@ function App(){
   const [addModal,setAddModal]     = useState(null);
   const [recipeModal,setRecipeModal] = useState(null);
   const [alertsModal,setAlertsModal] = useState(false);
-  const [challengeModal,setChallengeModal] = useState(false);
   const [scanModal,setScanModal]   = useState(false);
   const [settingsModal,setSettingsModal] = useState(false);
   const toastRef=useRef(null);
@@ -591,7 +590,6 @@ function App(){
     const isChallenge=!history.some(h=>h.month===month&&h.challenge);
     setHistory(prev=>[{id:uid(),recipeId:recipe.id,name:recipe.name,emoji:recipe.emoji,date:new Date().toISOString(),month,challenge:isChallenge},...prev]);
     setRecipeModal(null);
-    setChallengeModal(false);
     showToast(`🍽️ "${recipe.name}" cooked! Inventory updated.`);
     const newLow=getLowStock(updated);
     if(newLow.length>0) setTimeout(()=>showToast(`⚠️ ${newLow[0].name} is running low!`,'warning'),4000);
@@ -631,7 +629,6 @@ function App(){
       {addModal     &&<AddItemModal existing={addModal.item} onSave={saveItem} onClose={()=>setAddModal(null)} />}
       {recipeModal  &&<RecipeDetailModal recipe={recipeModal} inventory={inventory} onCook={cookRecipe} onClose={()=>setRecipeModal(null)} />}
       {alertsModal  &&<AlertsModal items={lowItems} onClose={()=>setAlertsModal(false)} />}
-      {challengeModal&&<MonthlyChallengeModal inventory={inventory} history={history} onCook={cookRecipe} onClose={()=>setChallengeModal(false)} />}
       {scanModal    &&<ScanModal apiKey={apiKey} onSave={saveMultipleItems} onClose={()=>setScanModal(false)} />}
       {settingsModal&&<SettingsModal prefs={prefs} apiKey={apiKey} onSave={(p,k)=>{setPrefs(p);setApiKey(k);setSettingsModal(false);showToast('✅ Settings saved!');}} onClose={()=>setSettingsModal(false)} />}
       {toast&&<div className={`toast ${toast.type}`}>{toast.msg}</div>}
