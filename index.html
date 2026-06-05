@@ -549,12 +549,6 @@ function App(){
   useEffect(()=>{ if(prefs) localStorage.setItem('kc_prefs',JSON.stringify(prefs)); },[prefs]);
   useEffect(()=>{ localStorage.setItem('kc_apikey',apiKey); },[apiKey]);
 
-  useEffect(()=>{
-    if(!prefs) return;
-    const month=getCurrentMonth();
-    const done=history.some(h=>h.month===month&&h.challenge);
-    if(!done) setTimeout(()=>setChallengeModal(true),900);
-  },[prefs]);
 
   const showToast=useCallback((msg,type='')=>{
     clearTimeout(toastRef.current);
